@@ -8,6 +8,7 @@ import {
   HeadObjectCommand,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { getEnv } from "@/lib/env";
 import { getR2BucketName, getR2Client, normalizeStoredObjectKey } from "@/lib/r2";
@@ -34,7 +35,7 @@ const mimeTypes: Record<string, string> = {
 
 const sanitizeFilename = (filename: string) => filename.replace(/[^a-zA-Z0-9._-]/g, "-");
 
-const createStoredFilename = (filename: string) => {
+export const createStoredFilename = (filename: string) => {
   const extension = path.extname(filename);
   const basename = path.basename(filename, extension);
   const safeBasename = sanitizeFilename(basename).slice(0, 64) || "file";
@@ -42,6 +43,9 @@ const createStoredFilename = (filename: string) => {
 
   return `${safeBasename}-${suffix}${extension}`;
 };
+
+export const createStoredObjectKey = (filename: string) =>
+  normalizeStoredObjectKey(path.join("uploads", createStoredFilename(filename)));
 
 type ValidateUploadOptions = {
   maxSizeInBytes?: number;
@@ -87,8 +91,8 @@ type SaveUploadedFileOptions = ValidateUploadOptions;
 export const saveUploadedFile = async (file: File, options: SaveUploadedFileOptions = {}) => {
   validateUpload(file, options);
 
-  const storedFilename = createStoredFilename(file.name);
-  const objectKey = normalizeStoredObjectKey(path.join("uploads", storedFilename));
+  const objectKey = createStoredObjectKey(file.name);
+  const storedFilename = path.basename(objectKey);
   const bytes = Buffer.from(await file.arrayBuffer());
   const bucket = getR2BucketName();
   const client = getR2Client();
@@ -110,6 +114,23 @@ export const saveUploadedFile = async (file: File, options: SaveUploadedFileOpti
     size: bytes.length,
   };
 };
+
+export const createPresignedUploadUrl = async (
+  objectKey: string,
+  contentType: string,
+  expiresInSeconds = 900,
+) =>
+  getSignedUrl(
+    getR2Client(),
+    new PutObjectCommand({
+      Bucket: getR2BucketName(),
+      Key: resolveStoredFilePath(objectKey),
+      ContentType: contentType || "application/octet-stream",
+    }),
+    {
+      expiresIn: expiresInSeconds,
+    },
+  );
 
 export const resolveStoredFilePath = (relativePath: string) => normalizeStoredObjectKey(relativePath);
 
@@ -171,6 +192,25 @@ export const getStoredFileBuffer = async (relativePath: string | null | undefine
     buffer: Buffer.from(bytes),
     contentType: result.ContentType ?? getContentTypeFromFilename(relativePath),
   };
+};
+
+export const storedFileExists = async (relativePath: string | null | undefined) => {
+  if (!relativePath) {
+    return false;
+  }
+
+  try {
+    await getR2Client().send(
+      new HeadObjectCommand({
+        Bucket: getR2BucketName(),
+        Key: resolveStoredFilePath(relativePath),
+      }),
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const getContentTypeFromFilename = (filename: string) => {

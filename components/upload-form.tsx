@@ -70,31 +70,116 @@ export function UploadForm({
     setSuccess(null);
 
     const formData = new FormData(event.currentTarget);
+    const file = formData.get("file");
+    const coverEntry = formData.get("cover");
+    const cover = coverEntry instanceof File && coverEntry.size > 0 ? coverEntry : null;
 
-    if (publishOnUpload) {
-      formData.set("publish", "true");
-    }
-
-    const response = await fetch("/api/resources/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-
-    if (!response.ok) {
-      setError(result?.error ?? "No se pudo subir el archivo.");
+    if (!(file instanceof File) || file.size === 0) {
+      setError("Selecciona un archivo valido.");
       return;
     }
 
-    formRef.current?.reset();
-    setSuccess(successMessage);
-    setCoverName("");
-    setFileName("");
+    try {
+      const prepareResponse = await fetch("/api/resources/upload/prepare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.get("title"),
+          description: formData.get("description"),
+          publish: publishOnUpload,
+          file: {
+            name: file.name,
+            size: file.size,
+            type: file.type || "application/octet-stream",
+          },
+          cover: cover
+            ? {
+                name: cover.name,
+                size: cover.size,
+                type: cover.type || "application/octet-stream",
+              }
+            : null,
+        }),
+      });
 
-    startTransition(() => {
-      router.refresh();
-    });
+      const prepareResult = (await prepareResponse.json().catch(() => null)) as
+        | {
+            error?: string;
+            file?: { key: string; uploadUrl: string; contentType: string; originalName: string };
+            cover?: { key: string; uploadUrl: string; contentType: string; originalName: string } | null;
+          }
+        | null;
+
+      if (!prepareResponse.ok || !prepareResult?.file) {
+        setError(prepareResult?.error ?? "No se pudo preparar la subida.");
+        return;
+      }
+
+      const uploadTargets = [
+        fetch(prepareResult.file.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": prepareResult.file.contentType,
+          },
+          body: file,
+        }),
+      ];
+
+      if (cover && prepareResult.cover) {
+        uploadTargets.push(
+          fetch(prepareResult.cover.uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": prepareResult.cover.contentType,
+            },
+            body: cover,
+          }),
+        );
+      }
+
+      const uploadResponses = await Promise.all(uploadTargets);
+      const uploadFailed = uploadResponses.some((response) => !response.ok);
+
+      if (uploadFailed) {
+        setError("No se pudo subir el archivo directamente a Cloudflare R2.");
+        return;
+      }
+
+      const completeResponse = await fetch("/api/resources/upload/complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileKey: prepareResult.file.key,
+          coverKey: prepareResult.cover?.key ?? null,
+          title: formData.get("title"),
+          description: formData.get("description"),
+          publish: publishOnUpload,
+        }),
+      });
+
+      const completeResult = (await completeResponse.json().catch(() => null)) as { error?: string } | null;
+
+      if (!completeResponse.ok) {
+        setError(completeResult?.error ?? "No se pudo finalizar la subida.");
+        return;
+      }
+
+      formRef.current?.reset();
+      setSuccess(successMessage);
+      setCoverName("");
+      setFileName("");
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setError("Ocurrio un problema al subir el archivo.");
+    }
   };
 
   return (
@@ -253,7 +338,7 @@ export function UploadForm({
           <span className="inline-note">
             {storageLocked
               ? "No puedes subir mas archivos hasta liberar espacio."
-              : "Se bloquearan nuevas subidas al llegar al limite configurado."}
+              : "Los archivos se suben directo a Cloudflare R2 para permitir tamanos grandes."}
           </span>
         </div>
 
