@@ -20,22 +20,44 @@ export function ScrollReveal({ children, className = "", delayMs = 0 }: ScrollRe
       return;
     }
 
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (window.innerWidth <= 980 || !("IntersectionObserver" in window)) {
+      const frame = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    const revealFallback = window.setTimeout(() => {
+      setIsVisible(true);
+    }, 1400);
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
           setIsVisible(true);
+          window.clearTimeout(revealFallback);
           observer.disconnect();
         }
       },
       {
-        threshold: 0.16,
-        rootMargin: "0px 0px -10%",
+        threshold: 0.08,
+        rootMargin: "0px 0px -4%",
       },
     );
 
     observer.observe(node);
 
-    return () => observer.disconnect();
+    return () => {
+      window.clearTimeout(revealFallback);
+      observer.disconnect();
+    };
   }, []);
 
   return (
