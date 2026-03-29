@@ -47,7 +47,7 @@ type UploadFormProps = {
 export function UploadForm({
   kicker = "Recursos",
   title = "Agregar recurso",
-  description = "Sube el archivo principal, una portada opcional y el texto con el que quieres publicarlo.",
+  description = "Sube el archivo principal, agrega una portada si quieres y completa los datos del recurso.",
   submitLabel = "Subir",
   successMessage = "Archivo subido.",
   publishOnUpload = false,
@@ -192,9 +192,9 @@ export function UploadForm({
         </div>
 
         <div className="upload-card-badges" aria-hidden="true">
-          <span className="upload-card-badge is-accent">Publicacion automatica</span>
-          <span className="upload-card-badge">Recurso publico</span>
-          <span className="upload-card-badge">Panel admin</span>
+          <span className="upload-card-badge is-accent">Publicacion directa</span>
+          <span className="upload-card-badge">Visible en la web</span>
+          <span className="upload-card-badge">Gestion interna</span>
         </div>
       </div>
 
@@ -221,8 +221,8 @@ export function UploadForm({
                 <span>Uso de Cloudflare R2</span>
                 <small>
                   {storage.availableBytes > 0
-                    ? `Te quedan ${formatBytes(storage.availableBytes)} libres`
-                    : "Has llegado al limite configurado del almacenamiento"}
+                    ? `Quedan ${formatBytes(storage.availableBytes)} disponibles`
+                    : "Se alcanzo el limite configurado del almacenamiento"}
                 </small>
               </div>
               <strong>{formattedUsagePercent}</strong>
@@ -284,8 +284,8 @@ export function UploadForm({
           <div className="upload-box upload-box-secondary">
             <div className="upload-box-head">
               <div className="upload-copy">
-                <strong>Sube una imagen opcional para representarlo</strong>
-                <p>Se usara como portada publica.</p>
+                <strong>Agrega una imagen para usarla como portada</strong>
+                <p>Este paso es opcional.</p>
               </div>
               <span className="upload-box-chip">Opcional</span>
             </div>
@@ -311,8 +311,8 @@ export function UploadForm({
           <div className="upload-box upload-box-featured">
             <div className="upload-box-head">
               <div className="upload-copy">
-                <strong>Selecciona el archivo que quieres subir</strong>
-                <p>Quedara listo para publicarse.</p>
+                <strong>Elige el archivo principal del recurso</strong>
+                <p>Se guardara en tu biblioteca para poder publicarlo.</p>
               </div>
               <span className="upload-box-chip is-strong">Principal</span>
             </div>
@@ -334,11 +334,11 @@ export function UploadForm({
 
       <div className="upload-submit-strip">
         <div className="upload-submit-copy">
-          <p className="upload-submit-title">Listo para publicar</p>
+          <p className="upload-submit-title">Subida de recursos</p>
           <span className="inline-note">
             {storageLocked
               ? "No puedes subir mas archivos hasta liberar espacio."
-              : "Los archivos se suben directo a Cloudflare R2 para permitir tamanos grandes."}
+              : "Los archivos se suben directo a Cloudflare R2 para admitir tamanos grandes."}
           </span>
         </div>
 

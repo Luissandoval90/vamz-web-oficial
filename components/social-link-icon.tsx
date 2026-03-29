@@ -8,6 +8,20 @@ const normalizePlatform = (platform: string) => platform.trim().toLowerCase();
 export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
   const key = normalizePlatform(platform);
 
+  if (key === "discord") {
+    return (
+      <svg
+        aria-hidden="true"
+        className={className}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M20.3 4.37A17.43 17.43 0 0 0 15.9 3c-.2.36-.44.85-.6 1.23a16.2 16.2 0 0 0-4.6 0A12.6 12.6 0 0 0 10.1 3a17.1 17.1 0 0 0-4.42 1.38C2.9 8.46 2.14 12.44 2.52 16.37A17.74 17.74 0 0 0 7.9 19c.43-.58.81-1.2 1.14-1.86-.63-.24-1.23-.54-1.8-.9.15-.11.3-.23.44-.35 3.47 1.63 7.24 1.63 10.67 0 .15.12.3.24.44.35-.57.36-1.18.66-1.8.9.33.66.71 1.28 1.14 1.86a17.63 17.63 0 0 0 5.38-2.63c.45-4.56-.77-8.5-3.1-12Zm-8.6 9.6c-1.05 0-1.92-.98-1.92-2.17 0-1.2.84-2.17 1.92-2.17 1.09 0 1.95.98 1.93 2.17 0 1.2-.84 2.17-1.93 2.17Zm6.6 0c-1.06 0-1.92-.98-1.92-2.17 0-1.2.84-2.17 1.92-2.17 1.08 0 1.94.98 1.92 2.17 0 1.2-.84 2.17-1.92 2.17Z" />
+      </svg>
+    );
+  }
+
   if (key === "instagram") {
     return (
       <svg
@@ -34,37 +48,10 @@ export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M21.2 8.4a3.1 3.1 0 0 0-2.2-2.2C17 5.7 12 5.7 12 5.7s-5 0-7 .5A3.1 3.1 0 0 0 2.8 8.4 32.4 32.4 0 0 0 2.3 12c0 1.2.1 2.5.5 3.6A3.1 3.1 0 0 0 5 17.8c2 .5 7 .5 7 .5s5 0 7-.5a3.1 3.1 0 0 0 2.2-2.2c.3-1.1.5-2.4.5-3.6s-.2-2.5-.5-3.6Z"
+          d="M21.6 8.7a2.98 2.98 0 0 0-2.1-2.11C17.68 6.1 12 6.1 12 6.1s-5.68 0-7.5.49A2.98 2.98 0 0 0 2.4 8.7C1.9 10.52 1.9 12 1.9 12s0 1.48.5 3.3a2.98 2.98 0 0 0 2.1 2.11c1.82.49 7.5.49 7.5.49s5.68 0 7.5-.49a2.98 2.98 0 0 0 2.1-2.11c.5-1.82.5-3.3.5-3.3s0-1.48-.5-3.3Z"
           fill="currentColor"
         />
-        <path d="M10 15.5v-7l6 3.5-6 3.5Z" fill="#ffffff" />
-      </svg>
-    );
-  }
-
-  if (key === "discord") {
-    return (
-      <svg
-        aria-hidden="true"
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M8.7 8.6a9.8 9.8 0 0 1 6.6 0m-7.3 6.7c1.7 1.2 3.3 1.4 4 1.4.7 0 2.3-.2 4-1.4m-7.8-1.9c-.4 0-.8-.4-.8-1s.4-1 .8-1 .8.4.8 1-.4 1-.8 1Zm7.6 0c-.4 0-.8-.4-.8-1s.4-1 .8-1 .8.4.8 1-.4 1-.8 1Z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M7.2 17.2c-1.4-.1-2-.9-2.3-1.7-.8-1.9-1-4-.6-6 .3-1.7 1.4-3.2 3-4 0 0 .9.3 2.2 1.2a8.7 8.7 0 0 1 5 0c1.3-.9 2.2-1.2 2.2-1.2 1.6.8 2.7 2.3 3 4 .4 2 .2 4.1-.6 6-.3.8-.9 1.6-2.3 1.7"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <path d="M10.25 15.3V8.7L15.85 12l-5.6 3.3Z" fill="#ffffff" />
       </svg>
     );
   }
@@ -79,8 +66,20 @@ export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M14 4c.5 1.5 1.4 2.8 2.6 3.7A6 6 0 0 0 20 9v3.1a9.6 9.6 0 0 1-3-.5V16a5 5 0 1 1-5-5c.3 0 .7 0 1 .1v3.2a2.2 2.2 0 1 0 1 1.8V4h0Z"
-          fill="currentColor"
+          d="M13.08 4.18v10.05a2.33 2.33 0 1 1-2.33-2.23c.22 0 .43.03.64.09V9.66a4.77 4.77 0 1 0 4.12 4.71V9.24a6.46 6.46 0 0 0 3.78 1.21V8.01a4.36 4.36 0 0 1-3.08-1.28 4.4 4.4 0 0 1-1.12-2.55h-2.01Z"
+          fill="#25F4EE"
+          opacity="0.95"
+          transform="translate(-0.55 0.35)"
+        />
+        <path
+          d="M13.08 4.18v10.05a2.33 2.33 0 1 1-2.33-2.23c.22 0 .43.03.64.09V9.66a4.77 4.77 0 1 0 4.12 4.71V9.24a6.46 6.46 0 0 0 3.78 1.21V8.01a4.36 4.36 0 0 1-3.08-1.28 4.4 4.4 0 0 1-1.12-2.55h-2.01Z"
+          fill="#FE2C55"
+          opacity="0.9"
+          transform="translate(0.45 -0.35)"
+        />
+        <path
+          d="M13.08 4.18v10.05a2.33 2.33 0 1 1-2.33-2.23c.22 0 .43.03.64.09V9.66a4.77 4.77 0 1 0 4.12 4.71V9.24a6.46 6.46 0 0 0 3.78 1.21V8.01a4.36 4.36 0 0 1-3.08-1.28 4.4 4.4 0 0 1-1.12-2.55h-2.01Z"
+          fill="#ffffff"
         />
       </svg>
     );

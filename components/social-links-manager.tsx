@@ -252,7 +252,7 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
           <p className="section-kicker">Links</p>
           <h2 className="section-title-sm">Crear red social</h2>
           <p className="body-copy">
-            Agrega tus redes para mostrarlas en el inicio. Puedes poner nombre, enlace e icono corto.
+            Agrega aqui los enlaces que quieres mostrar en la pagina principal.
           </p>
         </div>
 
@@ -337,12 +337,12 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
           <p className="section-kicker">Publicados</p>
           <h2 className="section-title-sm">Tus links</h2>
           <p className="body-copy">
-            Desde aqui puedes editar o quitar las redes que aparecen en el inicio del sitio.
+            Edita o elimina los enlaces que ya aparecen publicados en el inicio.
           </p>
         </div>
 
         {links.length === 0 ? (
-          <div className="empty-box">Aun no has agregado links.</div>
+          <div className="empty-box">Todavia no has agregado enlaces.</div>
         ) : (
           <div className="social-links-list">
             {links.map((link) => (

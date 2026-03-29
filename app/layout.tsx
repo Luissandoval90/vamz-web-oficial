@@ -17,7 +17,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "VAMZ Studio",
-  description: "Biblioteca privada de VAMZ Studio con acceso, recursos y panel personal.",
+  description: "Sitio oficial de VAMZ Studio con recursos, enlaces y panel de administracion.",
 };
 
 export default function RootLayout({

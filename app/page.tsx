@@ -9,6 +9,8 @@ import { socialLinks } from "@/db/schema";
 import {
   getSocialLinkAccent,
   getSocialLinkDisplayName,
+  getSocialLinkGlow,
+  getSocialLinkSurface,
 } from "@/lib/social-links";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +23,24 @@ export default async function Home() {
     <PublicPageShell
       active="home"
       subtitle="Inicio"
-      title="Recursos y portadas del estudio."
-      description="Aqui tienes reunido el material principal de VAMZ Studio para entrar al panel y mantener todo mas a mano."
+      title="Recursos y portadas de VAMZ."
+      description="Todo lo importante del proyecto esta reunido en un solo lugar para que lo tengas siempre a mano."
       imageSrc="/remtop.webp"
       imageAlt="Rem banner"
+      pageBackdrop={
+        <div className="hero-video-shell" aria-hidden="true">
+          <video
+            className="hero-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+          >
+            <source src="/minecraft-hero-bg.mp4" type="video/mp4" />
+          </video>
+        </div>
+      }
       heroFooter={
         <div className="hero-tags">
           <span className="tag-chip">Portadas</span>
@@ -38,9 +54,9 @@ export default async function Home() {
         <article className="panel-card library-panel home-links-panel animate-up delay-1">
           <div className="section-heading">
             <p className="section-kicker">Links</p>
-            <h2 className="section-title-sm">Redes del proyecto</h2>
+            <h2 className="section-title-sm">Redes oficiales</h2>
             <p className="body-copy">
-              Aqui aparecen las redes que publiques desde el panel del admin.
+              Aqui encuentras los perfiles y canales oficiales del proyecto.
             </p>
           </div>
 
@@ -55,6 +71,8 @@ export default async function Home() {
                 style={
                   {
                     "--link-accent": getSocialLinkAccent(link.platform),
+                    "--link-surface": getSocialLinkSurface(link.platform),
+                    "--link-glow": getSocialLinkGlow(link.platform),
                   } as CSSProperties
                 }
               >

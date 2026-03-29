@@ -104,7 +104,7 @@ export function DashboardShell({
     <>
       <UploadForm
         title="Panel de recursos"
-        description="Sube un recurso nuevo y despues lo ajustas desde la biblioteca de abajo."
+        description="Sube un archivo nuevo y organiza su informacion desde la biblioteca."
         submitLabel="Subir recurso"
         successMessage="Recurso subido y publicado."
         publishOnUpload
@@ -114,9 +114,9 @@ export function DashboardShell({
       <ResourceLibrary
         resources={resources}
         kicker="Panel"
-        title="Editar y publicar recursos"
-        description="Todo lo que publiques aqui aparece en la pagina publica de Recursos."
-        emptyStateCopy="Aun no tienes recursos para publicar."
+        title="Tus recursos"
+        description="Desde aqui puedes editar, ordenar y publicar lo que quieras mostrar en la web."
+        emptyStateCopy="Todavia no has subido ningun recurso."
         showSearch
         showEditControls
         className="library-panel dashboard-library-block"
@@ -158,13 +158,13 @@ export function DashboardShell({
           </div>
 
           <section className="page-main dashboard-main">
-            <section className="panel-card hero-panel dashboard-hero-panel">
+          <section className="panel-card hero-panel dashboard-hero-panel">
               <div className="hero-copy">
-                <p className="section-kicker">{currentView?.label ?? "Panel del admin"}</p>
-                <h1 className="page-title dashboard-page-title">Panel del admin.</h1>
+                <p className="section-kicker">{currentView?.label ?? "Panel"}</p>
+                <h1 className="page-title dashboard-page-title">Panel de control.</h1>
                 <p className="lead">
-                  Hola, {displayName}. Desde aqui puedes publicar recursos y tambien administrar
-                  los links de tus redes para mostrarlos en el inicio.
+                  Hola, {displayName}. Desde este panel puedes subir recursos y gestionar los
+                  enlaces que aparecen en la pagina principal.
                 </p>
               </div>
 

@@ -39,10 +39,24 @@ export default async function RecursosPage() {
     <PublicPageShell
       active="resources"
       subtitle="Recursos"
-      title="Biblioteca publica del proyecto."
-      description="Aqui aparecen los recursos que se publican desde el panel para que cualquiera pueda abrirlos y revisarlos."
+      title="Recursos publicados."
+      description="En esta seccion estan los archivos que ya fueron publicados para descarga y consulta."
       imageSrc="/rem3.jpg"
       imageAlt="Recursos"
+      pageBackdrop={
+        <div className="hero-video-shell" aria-hidden="true">
+          <video
+            className="hero-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+          >
+            <source src="/minecraft-hero-bg.mp4" type="video/mp4" />
+          </video>
+        </div>
+      }
       heroFooter={
         <div className="hero-tags">
           <span className="tag-chip">Publico</span>
@@ -54,8 +68,8 @@ export default async function RecursosPage() {
       {publishedResources.length > 0 ? (
         <article className="panel-card library-panel animate-up delay-1">
           <div className="section-heading">
-            <p className="section-kicker">Biblioteca publica</p>
-            <h2 className="section-title-sm">Recursos visibles para todos</h2>
+            <p className="section-kicker">Biblioteca</p>
+            <h2 className="section-title-sm">Recursos disponibles</h2>
           </div>
 
           <div className="public-resource-grid">

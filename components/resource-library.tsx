@@ -157,9 +157,9 @@ function ResourceEditorCard({
           </div>
         </div>
 
-        <div className="resource-details-grid">
+          <div className="resource-details-grid">
           <p className="resource-copy">
-            {resource.description?.trim() || "Sin descripcion todavia."}
+            {resource.description?.trim() || "Este recurso todavia no tiene descripcion."}
           </p>
           <div className="resource-meta-stack">
             <span>{formatBytes(resource.totalSize)}</span>
@@ -265,8 +265,8 @@ export function ResourceLibrary({
   resources,
   kicker = "Biblioteca",
   title = "Todos tus recursos",
-  description = "Edita el nombre visible, la descripcion, la portada y publica lo que quieras mostrar.",
-  emptyStateCopy = "Aun no tienes recursos cargados.",
+  description = "Edita el nombre, la descripcion y la portada de cada recurso antes de publicarlo.",
+  emptyStateCopy = "Todavia no hay recursos cargados.",
   showSearch = true,
   showEditControls = true,
   className = "",
