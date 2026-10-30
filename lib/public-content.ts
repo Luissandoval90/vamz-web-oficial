@@ -3,10 +3,11 @@ import { desc, eq } from "drizzle-orm";
 import { cache } from "react";
 import { getDb } from "@/db";
 import { resources, socialLinks, users } from "@/db/schema";
+import { getDisplayUsername } from "@/lib/usernames";
 
-export const getPublicResources = cache(async () => {
+export const getPublicResources = cache(async (limit?: number) => {
   if (!process.env.TURSO_DATABASE_URL) return [];
-  return getDb()
+  const query = getDb()
     .select({
       id: resources.id,
       filename: resources.filename,
@@ -23,6 +24,11 @@ export const getPublicResources = cache(async () => {
     .innerJoin(users, eq(users.id, resources.userId))
     .where(eq(resources.isPublished, true))
     .orderBy(desc(resources.publishedAt), desc(resources.createdAt));
+  const rows = await (limit ? query.limit(limit) : query);
+  return rows.map(({ username, email, ...resource }) => ({
+    ...resource,
+    author: getDisplayUsername(username, email),
+  }));
 });
 
 export const getPublicSocialLinks = cache(async () => {

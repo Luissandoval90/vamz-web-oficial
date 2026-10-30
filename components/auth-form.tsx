@@ -73,6 +73,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               name="username"
               type="text"
               autoComplete="username"
+              spellCheck={false}
               placeholder="¿Cómo te llamamos?"
               minLength={3}
               maxLength={32}
@@ -87,6 +88,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             name="email"
             type="email"
             autoComplete="email"
+            spellCheck={false}
             placeholder="tu@correo.com"
             required
             disabled={pending}

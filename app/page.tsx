@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [resources, links] = await Promise.all([
-    getPublicResources(),
+    getPublicResources(6),
     getPublicSocialLinks(),
   ]);
   const discord = links.find(

@@ -10,7 +10,6 @@ import {
   archiveExtensions,
   getFileExtension,
 } from "@/lib/resource-utils";
-import { getDisplayUsername } from "@/lib/usernames";
 
 export type CatalogResource = {
   id: string;
@@ -21,8 +20,7 @@ export type CatalogResource = {
   fileSize: number;
   createdAt: string;
   publishedAt: string | null;
-  username: string | null;
-  email: string;
+  author: string;
 };
 const categories = [
   "Todos",
@@ -85,6 +83,8 @@ export function ResourceCatalog({
               <UiIcon name="search" />
               <input
                 type="search"
+                name="q"
+                autoComplete="off"
                 aria-label="Buscar recursos"
                 placeholder="Busca tu próximo recurso…"
                 value={search}
@@ -170,8 +170,7 @@ export function ResourceCatalog({
                     </div>
                     <h3>{resource.title?.trim() || resource.filename}</h3>
                     <p>
-                      {resource.description?.trim() ||
-                        `Por ${getDisplayUsername(resource.username, resource.email)}`}
+                      {resource.description?.trim() || `Por ${resource.author}`}
                     </p>
                     <span className="resource-card-action">
                       Ver recurso <UiIcon name="arrow" />
