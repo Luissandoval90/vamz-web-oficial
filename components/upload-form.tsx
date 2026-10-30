@@ -162,7 +162,7 @@ export function UploadForm({
       const uploadFailed = uploadResponses.some((response) => !response.ok);
 
       if (uploadFailed) {
-        setError("No se pudo subir el archivo directamente a Cloudflare R2.");
+        setError("No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.");
         return;
       }
 
@@ -256,7 +256,7 @@ export function UploadForm({
           <div className="storage-progress">
             <div className="storage-progress-copy">
               <div className="storage-progress-copy-text">
-                <span>Uso de Cloudflare R2</span>
+                <span>Uso del almacenamiento</span>
                 <small>
                   {storage.availableBytes > 0
                     ? `Quedan ${formatBytes(storage.availableBytes)} disponibles`
@@ -268,7 +268,7 @@ export function UploadForm({
             <div
               className="storage-progress-bar"
               role="progressbar"
-              aria-label="Uso de Cloudflare R2"
+              aria-label="Uso del almacenamiento"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Number(storage.usagePercent.toFixed(4))}
@@ -383,7 +383,7 @@ export function UploadForm({
           <span className="inline-note">
             {storageLocked
               ? "No puedes subir mas archivos hasta liberar espacio."
-              : "Los archivos se suben directo a Cloudflare R2 para admitir tamanos grandes."}
+              : "Los archivos se guardan en tu biblioteca para descargarlos cuando quieras."}
           </span>
         </div>
 
@@ -398,7 +398,7 @@ export function UploadForm({
 
       {storageLocked ? (
         <p className="status-text is-error">
-          El almacenamiento de Cloudflare R2 ya llego al limite configurado.
+          El almacenamiento ya llegó al límite configurado.
           Elimina recursos o aumenta la capacidad antes de subir otro archivo.
         </p>
       ) : null}

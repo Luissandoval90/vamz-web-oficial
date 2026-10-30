@@ -6,6 +6,7 @@ import { resources, socialLinks, users } from "@/db/schema";
 import { buildStorageSummary, resolveResourcesStorage } from "@/lib/resource-storage";
 import { requireAdminUser } from "@/lib/server-auth";
 import { getDisplayUsername } from "@/lib/usernames";
+import { getLocalUsedBytes, isLocalStorage } from "@/lib/uploads";
 
 type DashboardPageProps = {
   searchParams?: Promise<{
@@ -32,7 +33,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .orderBy(desc(resources.createdAt));
   const publishedSocialLinks = await db.select().from(socialLinks).orderBy(desc(socialLinks.updatedAt));
   const resolvedResources = await resolveResourcesStorage(uploadedResources);
-  const resourcesStorage = buildStorageSummary(resolvedResources);
+  const resourcesStorage = buildStorageSummary(resolvedResources, isLocalStorage() ? await getLocalUsedBytes() : undefined);
 
   return (
     <DashboardShell

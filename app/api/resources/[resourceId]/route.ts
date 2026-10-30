@@ -9,7 +9,8 @@ import { getRequestAdmin, getRequestUser } from "@/lib/request-auth";
 import {
   deleteStoredFile,
   getContentTypeFromFilename,
-  getStoredFileBuffer,
+  getStoredFileStream,
+  StorageError,
 } from "@/lib/uploads";
 
 export const runtime = "nodejs";
@@ -64,18 +65,25 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Resource not found." }, { status: 404 });
   }
 
-  let file: Awaited<ReturnType<typeof getStoredFileBuffer>>;
+  let file: Awaited<ReturnType<typeof getStoredFileStream>>;
 
   try {
-    file = await getStoredFileBuffer(resource.path);
-  } catch {
+    file = await getStoredFileStream(resource.path, request.headers.get("range"));
+  } catch (error) {
+    if (error instanceof StorageError && error.status === 416) return new NextResponse(null, { status: 416, headers: { "Content-Range": `bytes */${resource.fileSize}` } });
     return NextResponse.json({ error: "File is missing from storage." }, { status: 404 });
   }
 
-  return new NextResponse(file.buffer, {
+  return new NextResponse(file.stream, {
+    status: file.contentRange ? 206 : 200,
     headers: {
       "Content-Disposition": createContentDisposition(resource.filename, shouldDownload),
       "Content-Type": file.contentType || getContentTypeFromFilename(resource.filename),
+      "Content-Length": String(file.size),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      ...(file.contentRange ? { "Content-Range": file.contentRange } : {}),
     },
   });
 }

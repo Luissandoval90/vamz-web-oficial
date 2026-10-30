@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-La portada, la biblioteca vacía y los formularios se pueden revisar sin credenciales. Si no se configura Turso, la vista pública muestra los enlaces oficiales y no simula archivos publicados. Para probar cuentas, el panel y los recursos reales se necesitan las variables de entorno.
+La portada, la biblioteca vacía y los formularios se pueden revisar sin credenciales. Sin una base de datos configurada, la vista pública muestra los enlaces oficiales y no simula archivos publicados. Para probar cuentas, el panel y los recursos reales se necesitan las variables de entorno.
 
 ## Configuración
 
@@ -55,3 +55,6 @@ El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o su
 - `lib/public-content.ts`: lectura de recursos publicados y redes oficiales.
 - `app/globals.css`: estilos de la interfaz y reglas de adaptación.
 - `db` y `drizzle`: esquema y migraciones de la base de datos.
+# Alojamiento en VPS
+
+La configuración para alojar la web, SQLite y los archivos en una sola VPS está en [deploy/VPS.md](deploy/VPS.md). Incluye Docker Compose, HTTPS y una herramienta para copiar los datos existentes sin modificar Turso ni R2.

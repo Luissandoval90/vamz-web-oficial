@@ -1,0 +1,45 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      STORAGE_DRIVER: local
+      DATA_DIR: /data
+      DATABASE_URL: file:/data/db/vamz.sqlite
+      NODE_OPTIONS: --max-old-space-size=1024
+    expose:
+      - "3000"
+    volumes:
+      - ./data:/data
+      - next_cache:/app/.next/cache
+    mem_limit: 2g
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      VAMZ_DOMAIN: ${VAMZ_DOMAIN:?Configura VAMZ_DOMAIN en .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    mem_limit: 256m
+volumes:
+  next_cache:
+  caddy_data:
+  caddy_config:

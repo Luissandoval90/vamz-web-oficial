@@ -4,9 +4,10 @@ import { cache } from "react";
 import { getDb } from "@/db";
 import { resources, socialLinks, users } from "@/db/schema";
 import { getDisplayUsername } from "@/lib/usernames";
+import { isDatabaseConfigured } from "@/lib/env";
 
 export const getPublicResources = cache(async (limit?: number) => {
-  if (!process.env.TURSO_DATABASE_URL) return [];
+  if (!isDatabaseConfigured()) return [];
   const query = getDb()
     .select({
       id: resources.id,
@@ -32,7 +33,7 @@ export const getPublicResources = cache(async (limit?: number) => {
 });
 
 export const getPublicSocialLinks = cache(async () => {
-  if (!process.env.TURSO_DATABASE_URL)
+  if (!isDatabaseConfigured())
     return [
       { id: 1, platform: "Discord", url: "https://discord.gg/RhEdF4XZC" },
       { id: 2, platform: "Twitch", url: "https://twitch.tv/vamztwitch" },

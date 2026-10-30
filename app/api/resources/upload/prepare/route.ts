@@ -9,6 +9,9 @@ import {
   createPresignedUploadUrl,
   createStoredObjectKey,
   getStorageQuotaBytes,
+  getLocalUsedBytes,
+  isLocalStorage,
+  StorageError,
   validateUpload,
 } from "@/lib/uploads";
 import { resourceMetadataSchema } from "@/lib/validators";
@@ -81,6 +84,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  try {
   validateUpload(
     {
       name: file.name,
@@ -98,6 +102,9 @@ export async function POST(request: NextRequest) {
       { label: "cover", imageOnly: true },
     );
   }
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Archivo no válido." }, { status: error instanceof StorageError ? error.status : 400 });
+  }
 
   const db = getDb();
   const existingResources = await db
@@ -107,7 +114,7 @@ export async function POST(request: NextRequest) {
     })
     .from(resources)
     .where(eq(resources.userId, user.id));
-  const currentlyUsedBytes = existingResources.reduce(
+  const currentlyUsedBytes = isLocalStorage() ? await getLocalUsedBytes() : existingResources.reduce(
     (sum, resource) => sum + resource.fileSize + resource.coverSize,
     0,
   );
@@ -117,18 +124,18 @@ export async function POST(request: NextRequest) {
   if (currentlyUsedBytes + incomingBytes > storageLimitBytes) {
     return NextResponse.json(
       {
-        error: "No hay espacio suficiente en Cloudflare R2 para subir este recurso.",
+        error: "No hay espacio suficiente para subir este recurso.",
       },
       { status: 400 },
     );
   }
 
-  const fileKey = createStoredObjectKey(file.name);
-  const coverKey = cover ? createStoredObjectKey(cover.name) : null;
+  const fileKey = createStoredObjectKey(file.name, user.id);
+  const coverKey = cover ? createStoredObjectKey(cover.name, user.id) : null;
 
   const [fileUploadUrl, coverUploadUrl] = await Promise.all([
-    createPresignedUploadUrl(fileKey, file.type),
-    coverKey && cover ? createPresignedUploadUrl(coverKey, cover.type) : Promise.resolve(null),
+    createPresignedUploadUrl(fileKey, file.type, 900, { userId: user.id, size: file.size }),
+    coverKey && cover ? createPresignedUploadUrl(coverKey, cover.type, 900, { userId: user.id, size: cover.size }) : Promise.resolve(null),
   ]);
 
   return NextResponse.json({

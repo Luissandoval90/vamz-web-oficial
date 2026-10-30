@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   if (currentlyUsedBytes + incomingBytes > storageLimitBytes) {
     return NextResponse.json(
       {
-        error: "No hay espacio suficiente en Cloudflare R2 para subir este recurso.",
+        error: "No hay espacio suficiente para subir este recurso.",
       },
       { status: 400 },
     );
@@ -80,10 +80,12 @@ export async function POST(request: NextRequest) {
   try {
     savedFile = await saveUploadedFile(file, {
       label: "file",
+      ownerId: user.id,
     });
     savedCover = cover
       ? await saveUploadedFile(cover, {
           label: "cover",
+          ownerId: user.id,
           imageOnly: true,
         })
       : null;

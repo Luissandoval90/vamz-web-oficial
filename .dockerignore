@@ -1,0 +1,13 @@
+.git
+node_modules
+.next
+.local
+output
+uploads
+data
+backups
+.vamz-migration-*
+.env*
+*.sqlite
+*.sqlite-*
+*.tsbuildinfo

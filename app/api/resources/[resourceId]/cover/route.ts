@@ -8,7 +8,7 @@ import { getDb } from "@/db";
 import { resources } from "@/db/schema";
 import { isAdminEmail } from "@/lib/admin";
 import { getRequestUser } from "@/lib/request-auth";
-import { getContentTypeFromFilename, getStoredFileBuffer } from "@/lib/uploads";
+import { getContentTypeFromFilename, getStoredFileStream } from "@/lib/uploads";
 
 type RouteContext = {
   params: Promise<{
@@ -46,12 +46,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const file = await getStoredFileBuffer(resource.coverPath);
+    const file = await getStoredFileStream(resource.coverPath);
 
-    return new NextResponse(file.buffer, {
+    return new NextResponse(file.stream, {
       headers: {
         "Content-Disposition": `inline; filename="${path.basename(resource.coverPath)}"`,
         "Content-Type": file.contentType || getContentTypeFromFilename(resource.coverPath),
+        "Content-Length": String(file.size),
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch {

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (nextTotalBytes > getStorageQuotaBytes()) {
       return NextResponse.json(
         {
-          error: "No hay espacio suficiente en Cloudflare R2 para actualizar la portada.",
+          error: "No hay espacio suficiente para actualizar la portada.",
         },
         { status: 400 },
       );
@@ -101,6 +101,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     savedCover = cover
       ? await saveUploadedFile(cover, {
           label: "cover",
+          ownerId: admin.id,
           imageOnly: true,
         })
       : null;

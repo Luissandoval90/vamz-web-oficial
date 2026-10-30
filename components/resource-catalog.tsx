@@ -222,9 +222,9 @@ export function ResourceCatalog({
               Limpiar filtros <UiIcon name="close" />
             </button>
           ) : (
-            <a className="text-link" href="/#comunidad">
+            <Link className="text-link" href="/#comunidad">
               Explorar la comunidad <UiIcon name="arrow" />
-            </a>
+            </Link>
           )}
         </div>
       )}
