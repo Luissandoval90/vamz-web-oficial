@@ -69,7 +69,7 @@ export function DashboardShell({
     ? featuredResource.coverPath
       ? `/api/resources/${featuredResource.id}/cover`
       : `/api/resources/${featuredResource.id}`
-    : "/remtop.webp";
+    : "/vamz-character.webp";
 
   const navigationItems = [
     {
