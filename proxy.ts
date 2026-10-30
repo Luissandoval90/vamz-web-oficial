@@ -6,13 +6,6 @@ import { isAdminEmail } from "@/lib/admin";
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
-    const origin = request.headers.get("origin");
-    const expected = process.env.VAMZ_DOMAIN ? `https://${process.env.VAMZ_DOMAIN}` : request.nextUrl.origin;
-    if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== expected)) {
-      return NextResponse.json({ error: "Solicitud de otro origen bloqueada." }, { status: 403 });
-    }
-  }
   if (path.startsWith("/dashboard")) {
     try {
       const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -25,7 +18,6 @@ export async function proxy(request: NextRequest) {
       return response;
     }
   }
-  if (path.startsWith("/api/")) return NextResponse.next();
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const development = process.env.NODE_ENV === "development";
   const policy = [
@@ -44,5 +36,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|webp|svg|ico|woff2)$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|webp|svg|ico|woff2)$).*)"],
 };

@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
 import { readRequestJson } from "@/lib/request-json";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -91,6 +92,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const user = await getRequestUser(request);
   if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
 
@@ -131,6 +134,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const user = await getRequestUser(request);
   if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
 

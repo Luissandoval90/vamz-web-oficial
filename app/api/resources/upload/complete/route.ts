@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
 import { readRequestJson } from "@/lib/request-json";
 import { isAdminEmail } from "@/lib/admin";
 import { and, eq } from "drizzle-orm";
@@ -14,6 +15,8 @@ import { minecraftVersionSchema } from "@/lib/minecraft-versions";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const user = await getRequestUser(request);
   if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Solo el administrador puede gestionar el contenido." }, { status: 403 });
   if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

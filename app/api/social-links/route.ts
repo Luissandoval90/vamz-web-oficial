@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
 import { readRequestJson } from "@/lib/request-json";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -10,6 +11,8 @@ import { socialLinkSchema } from "@/lib/validators";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const admin = await getRequestAdmin(request);
 
   if (!admin) {

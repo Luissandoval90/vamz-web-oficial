@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
 import { readRequestJson } from "@/lib/request-json";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -28,6 +29,8 @@ const parseLinkId = async (context: RouteContext) => {
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const admin = await getRequestAdmin(request);
 
   if (!admin) {
@@ -70,6 +73,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const admin = await getRequestAdmin(request);
 
   if (!admin) {

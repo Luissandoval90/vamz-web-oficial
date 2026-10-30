@@ -1,3 +1,4 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
 import { isAdminEmail } from "@/lib/admin";
 import { limitAuthentication } from "@/lib/auth-rate-limit";
 import { readRequestJson } from "@/lib/request-json";
@@ -14,6 +15,8 @@ import { credentialsSchema } from "@/lib/validators";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const limited = await limitAuthentication(request, "login");
   if (limited) return limited;
   const body = await readRequestJson(request);
