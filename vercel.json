@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/",
+      "destination": "https://vps-e9431466.vps.ovh.net/",
+      "permanent": false
+    },
+    {
       "source": "/:path*",
       "destination": "https://vps-e9431466.vps.ovh.net/:path*",
       "permanent": false
