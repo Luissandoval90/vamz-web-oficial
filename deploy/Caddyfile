@@ -1,7 +1,11 @@
 {$VAMZ_DOMAIN} {
   encode zstd gzip
   request_body {
-    max_size 1GB
+    max_size 3GB
+  }
+  @buffered_forms path /api/resources/upload /api/resources/*/details
+  request_body @buffered_forms {
+    max_size 32MB
   }
   reverse_proxy app:3000 {
     header_up X-Real-IP {remote_host}

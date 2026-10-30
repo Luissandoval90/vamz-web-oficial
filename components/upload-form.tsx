@@ -30,6 +30,7 @@ const getVisibleUsageWidth = (value: number) => {
 };
 
 type UploadFormProps = {
+  maxUploadBytes: number;
   kicker?: string;
   title?: string;
   description?: string;
@@ -46,6 +47,7 @@ type UploadFormProps = {
 };
 
 export function UploadForm({
+  maxUploadBytes,
   kicker = "Recursos",
   title = "Agregar recurso",
   description = "Sube el archivo principal, agrega una portada si quieres y completa los datos del recurso.",
@@ -86,6 +88,14 @@ export function UploadForm({
 
     if (!(file instanceof File) || file.size === 0) {
       setError("Selecciona un archivo valido.");
+      return;
+    }
+    if (file.size > maxUploadBytes) {
+      setError(`El archivo principal supera el máximo de ${formatBytes(maxUploadBytes)}.`);
+      return;
+    }
+    if (cover && cover.size > 16 * 1024 * 1024) {
+      setError("La portada supera el máximo de 16 MB.");
       return;
     }
 
@@ -175,7 +185,9 @@ export function UploadForm({
       const uploadFailed = uploadResponses.some((response) => !response.ok);
 
       if (uploadFailed) {
-        setError("No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.");
+        const failed = uploadResponses.find(response => !response.ok)!;
+        const result = await failed.json().catch(() => null) as { error?: string } | null;
+        setError(result?.error ?? (failed.status === 413 ? "El servidor rechazó el tamaño del archivo. Recarga la página e inténtalo de nuevo." : "No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo."));
         return;
       }
 
@@ -352,7 +364,7 @@ export function UploadForm({
             <div className="upload-box-head">
               <div className="upload-copy">
                 <strong>Agrega una imagen para usarla como portada</strong>
-                <p>Este paso es opcional.</p>
+                <p>Opcional. Máximo 16 MB.</p>
               </div>
               <span className="upload-box-chip">Opcional</span>
             </div>
@@ -381,7 +393,7 @@ export function UploadForm({
             <div className="upload-box-head">
               <div className="upload-copy">
                 <strong>Elige el archivo principal del recurso</strong>
-                <p>Se guardara en tu biblioteca para poder publicarlo.</p>
+                <p>Hasta {formatBytes(maxUploadBytes)} por archivo. Se guardará en tu biblioteca.</p>
               </div>
               <span className="upload-box-chip is-strong">Principal</span>
             </div>

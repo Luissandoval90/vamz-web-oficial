@@ -16,7 +16,7 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   RESOURCE_STORAGE_LIMIT_MB: z.coerce.number().positive().default(1024),
   TURSO_STORAGE_LIMIT_GB: z.coerce.number().positive().default(5),
-  MAX_UPLOAD_MB: z.coerce.number().positive().default(512),
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().max(2048).default(2048),
   MIN_FREE_SPACE_MB: z.coerce.number().nonnegative().default(2048),
 });
 type Env = z.infer<typeof envSchema>;

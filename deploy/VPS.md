@@ -10,7 +10,7 @@ La web se ejecuta con Next.js, SQLite local y archivos en disco. Caddy recibe la
 
 ## Preparación
 
-Pensado para Linux con Docker Engine y el complemento Docker Compose. La configuración de ejemplo limita la aplicación a 2 GB de RAM y las subidas a 512 MB por archivo. Reserva 25.000 MB para recursos y portadas y comprueba que queden al menos 2 GB libres antes de aceptar una subida. En un disco de 40 GB también deben caber el sistema, las imágenes de Docker y las copias de seguridad: estos valores se ajustan al espacio real disponible.
+Pensado para Linux con Docker Engine y el complemento Docker Compose. La configuración de ejemplo limita la aplicación a 2 GB de RAM y las subidas del administrador a 2 GB por archivo (2048 MB). Las portadas tienen un máximo de 16 MB. El archivo principal se envía por streaming; las rutas antiguas de formularios multipart se limitan a 32 MB en Caddy para acotar el uso de memoria. Reserva 25.000 MB para recursos y portadas y comprueba que queden al menos 2 GB libres antes de aceptar una subida. En un disco de 40 GB también deben caber el sistema, las imágenes de Docker y las copias de seguridad: estos valores se ajustan al espacio real disponible.
 
 Necesitas la IP pública, acceso SSH y un dominio propio. Crea un registro DNS `A` hacia la IP; añade `AAAA` únicamente si la IPv6 funciona. El subdominio `vamz-web-oficial.vercel.app` pertenece a Vercel y no puede apuntarse directamente a esta VPS. Para una comprobación provisional por IP puedes usar `VAMZ_DOMAIN=http://IP`, pero el acceso de usuarios requiere el dominio con HTTPS porque las cookies de producción son seguras.
 

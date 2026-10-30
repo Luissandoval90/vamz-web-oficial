@@ -14,7 +14,7 @@ await mkdir(root, { recursive: true });
 const env = { ...process.env, VAMZ_DOMAIN: "", NODE_ENV: 'production', STORAGE_DRIVER: 'local', DATA_DIR: root,
   DATABASE_URL: pathToFileURL(path.join(root, 'db/vamz.sqlite')).href,
   JWT_SECRET: randomBytes(48).toString('hex'), ADMIN_EMAILS: 'admin@example.test',
-  RESOURCE_STORAGE_LIMIT_MB: '512', MAX_UPLOAD_MB: '256', MIN_FREE_SPACE_MB: '0', NEXT_TELEMETRY_DISABLED: '1' };
+  RESOURCE_STORAGE_LIMIT_MB: '3072', MAX_UPLOAD_MB: process.env.VAMZ_TEST_MAX_UPLOAD_MB || '256', MIN_FREE_SPACE_MB: '0', NEXT_TELEMETRY_DISABLED: '1' };
 const port = Number(process.env.VAMZ_TEST_PORT || 3015);
 env.PORT = String(port);
 env.HOSTNAME = '127.0.0.1';
@@ -74,7 +74,7 @@ try {
     file: { name: 'sample.mcpack', size: file.length, type: 'application/zip' },
     cover: { name: 'cover.png', size: cover.length, type: 'image/png' }, title: 'Prueba VPS', publish,
   })).result;
-  await post('/api/resources/upload/prepare', admin, { file: { name: 'large.zip', size: 257 * 1024 * 1024 } }, 413);
+  await post('/api/resources/upload/prepare', admin, { file: { name: 'large.zip', size: Number(env.MAX_UPLOAD_MB) * 1024 * 1024 + 1 } }, 413);
   await post('/api/resources/upload/prepare', other, { file: { name: 'large.zip', size: 181 * 1024 * 1024 } }, 403);
   const minecraft = { version: '1.21.100', edition: 'Bedrock', platform: 'Android' };
   await post('/api/resources/upload/prepare', other, { file: { name: 'sample.apk', size: 10 }, publish: true, minecraft }, 403);
@@ -112,10 +112,16 @@ try {
   const own = await request(`/api/resources/${privateResource.id}`, { cookie: admin });
   assert.equal(own.status, 200);
   await own.arrayBuffer();
-  const largeFile = Buffer.alloc(12 * 1024 * 1024, 17);
-  const largeUpload = (await post('/api/resources/upload/prepare', admin, { file: { name: 'large.mcpack', size: largeFile.length } })).result;
-  assert.equal((await request(largeUpload.file.uploadUrl, { method: 'PUT', cookie: admin, body: largeFile })).status, 201);
+  const largeSize = Number(process.env.VAMZ_TEST_LARGE_UPLOAD_MB || 12) * 1024 * 1024;
+  let remaining = largeSize;
+  const largeFile = new ReadableStream({ pull(controller) { if (!remaining) { controller.close(); return; } const size = Math.min(64 * 1024, remaining); controller.enqueue(new Uint8Array(size).fill(17)); remaining -= size; } });
+  const largeUpload = (await post('/api/resources/upload/prepare', admin, { file: { name: 'large.mcpack', size: largeSize } })).result;
+  assert.equal((await request(largeUpload.file.uploadUrl, { method: 'PUT', cookie: admin, body: largeFile, duplex: 'half' })).status, 201);
   const largeResource = (await post('/api/resources/upload/complete', admin, { fileName: 'large.mcpack', fileKey: largeUpload.file.key }, 201)).result.resource;
+  assert.equal(largeResource.fileSize, largeSize);
+  const lastBytes = await request('/api/resources/'+largeResource.id, { cookie: admin, headers: { Range: 'bytes=-64' } });
+  assert.equal(lastBytes.status, 206);
+  assert.deepEqual(Buffer.from(await lastBytes.arrayBuffer()), Buffer.alloc(64,17));
   assert.equal((await request('/api/resources/'+largeResource.id, { method: 'DELETE', cookie: admin })).status, 200);
   for (const [url, method] of [
     ['/api/resources/upload', 'POST'], ['/api/resources/upload/complete', 'POST'],
@@ -162,6 +168,8 @@ try {
   await start();
   const login = await post('/api/auth/login', null, { email: 'admin@example.test', password });
   assert.ok(login.cookie);
+  const adminPanel = await (await request('/dashboard?view=minecraft', { cookie: login.cookie })).text();
+  assert.ok(adminPanel.includes('por archivo'));
   assert.equal(login.result.redirectTo, '/dashboard');
   assert.deepEqual(Buffer.from(await (await request(url)).arrayBuffer()), file);
   assert.equal((await request(`/api/resources/${resource.id}`, { method: 'DELETE', cookie: login.cookie })).status, 200);

@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       name: file.name,
       size: file.size,
     } as File,
-    { label: "file" },
+    { label: "archivo principal" },
   );
 
   if (cover) {
