@@ -32,8 +32,8 @@ export const buildStorageSummary = <
 >(
   resources: T[],
   usedBytesOverride?: number,
+  limitBytes = getStorageQuotaBytes(),
 ) => {
-  const limitBytes = getStorageQuotaBytes();
   const usedBytes = usedBytesOverride ?? resources.reduce((sum, resource) => sum + resource.totalSize, 0);
   const availableBytes = Math.max(limitBytes - usedBytes, 0);
   const usagePercent = limitBytes > 0 ? Math.min((usedBytes / limitBytes) * 100, 100) : 0;

@@ -36,6 +36,7 @@ type UploadFormProps = {
   submitLabel?: string;
   successMessage?: string;
   publishOnUpload?: boolean;
+  minecraftMode?: boolean;
   storage?: {
     limitBytes: number;
     usedBytes: number;
@@ -51,6 +52,7 @@ export function UploadForm({
   submitLabel = "Subir",
   successMessage = "Archivo subido.",
   publishOnUpload = false,
+  minecraftMode = false,
   storage,
 }: UploadFormProps) {
   const router = useRouter();
@@ -87,6 +89,16 @@ export function UploadForm({
       return;
     }
 
+    if (storage && file.size + (cover?.size ?? 0) > storage.availableBytes) {
+      setError(`No hay espacio suficiente. Te quedan ${formatBytes(storage.availableBytes)} para archivos y portadas.`);
+      return;
+    }
+    const minecraft = minecraftMode ? {
+      version: String(formData.get("version") ?? ""),
+      edition: String(formData.get("edition") ?? "Bedrock"),
+      platform: String(formData.get("platform") ?? "Android"),
+    } : undefined;
+
     setIsUploading(true);
     try {
       const prepareResponse = await fetch("/api/resources/upload/prepare", {
@@ -98,6 +110,7 @@ export function UploadForm({
           title: formData.get("title"),
           description: formData.get("description"),
           publish: publishOnUpload,
+          minecraft,
           file: {
             name: file.name,
             size: file.size,
@@ -178,6 +191,7 @@ export function UploadForm({
           title: formData.get("title"),
           description: formData.get("description"),
           publish: publishOnUpload,
+          minecraft,
         }),
       });
 
@@ -210,6 +224,7 @@ export function UploadForm({
       ref={formRef}
       className="panel-card upload-card upload-card-lg"
       onSubmit={handleSubmit}
+      aria-busy={isPending}
     >
       <div className="upload-card-head">
         <div className="section-heading">
@@ -293,6 +308,19 @@ export function UploadForm({
           </div>
         </section>
       ) : null}
+
+      {minecraftMode ? <fieldset className="minecraft-version-fields" disabled={isPending}>
+        <legend>Datos de la versión</legend>
+        <label className="field"><span className="field-label">Número de versión</span>
+          <input name="version" placeholder="Ej. 1.21.100" required maxLength={40} autoComplete="off" spellCheck={false} />
+        </label>
+        <label className="field"><span className="field-label">Edición</span>
+          <select name="edition" defaultValue="Bedrock"><option>Bedrock</option><option>Java</option></select>
+        </label>
+        <label className="field"><span className="field-label">Plataforma</span>
+          <select name="platform" defaultValue="Android"><option>Android</option><option>Windows</option><option>macOS</option><option>Linux</option><option>Multiplataforma</option></select>
+        </label>
+      </fieldset> : null}
 
       <div className="form-grid upload-meta-grid">
         <label className="field" htmlFor="resource-title">
@@ -392,7 +420,7 @@ export function UploadForm({
           type="submit"
           disabled={isPending || storageLocked}
         >
-          {isPending ? "Subiendo..." : submitLabel}
+          {isPending ? "Subiendo…" : submitLabel}
         </button>
       </div>
 

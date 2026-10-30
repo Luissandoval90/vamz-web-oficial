@@ -18,3 +18,7 @@ const getAdminEmails = () => {
 };
 
 export const isAdminEmail = (email: string) => getAdminEmails().has(normalizeEmail(email));
+
+export const USER_STORAGE_LIMIT_BYTES = 180 * 1024 * 1024;
+export const getUserStorageQuotaBytes = (email: string) =>
+  isAdminEmail(email) ? getEnv().RESOURCE_STORAGE_LIMIT_MB * 1024 * 1024 : USER_STORAGE_LIMIT_BYTES;

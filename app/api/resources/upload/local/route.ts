@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { getEnv, getLocalStorageRoot } from "@/lib/env";
 import { writeLocalUpload } from "@/lib/local-storage";
 import { getRequestUser } from "@/lib/request-auth";
+import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
 import { getStorageQuotaBytes, isLocalStorage, StorageError, verifyLocalUploadToken } from "@/lib/uploads";
 
 export const runtime = "nodejs";
@@ -22,7 +23,7 @@ export async function PUT(request: NextRequest) {
   const length = request.headers.get("content-length");
   if (length && Number(length) !== upload.size) return NextResponse.json({ error: "El tamaño del archivo no coincide." }, { status: 400 });
   try {
-    await writeLocalUpload({ root: getLocalStorageRoot(), key: upload.key, body: request.body, expectedSize: upload.size, quotaBytes: getStorageQuotaBytes(), minimumFreeBytes: getEnv().MIN_FREE_SPACE_MB * 1024 * 1024, signal: request.signal });
+    await writeLocalUpload({ root: getLocalStorageRoot(), key: upload.key, body: request.body, expectedSize: upload.size, quotaBytes: getStorageQuotaBytes(), ownerQuotaBytes: isAdminEmail(user.email) ? undefined : getUserStorageQuotaBytes(user.email), minimumFreeBytes: getEnv().MIN_FREE_SPACE_MB * 1024 * 1024, signal: request.signal });
     return NextResponse.json({ uploaded: true }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof StorageError ? error.message : "No se pudo guardar el archivo. Inténtalo de nuevo." }, { status: error instanceof StorageError ? error.status : 500 });

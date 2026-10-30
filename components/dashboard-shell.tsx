@@ -9,6 +9,7 @@ import { ResourceLibrary } from "@/components/resource-library";
 import { SocialLinksManager } from "@/components/social-links-manager";
 import { UploadForm } from "@/components/upload-form";
 import { getFileExtension, imageExtensions } from "@/lib/resource-utils";
+import type { MinecraftVersionMetadata } from "@/lib/minecraft-versions";
 
 type DashboardResource = {
   id: string;
@@ -23,6 +24,7 @@ type DashboardResource = {
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
+  minecraft?: MinecraftVersionMetadata | null;
 };
 
 type DashboardShellProps = {
@@ -32,6 +34,8 @@ type DashboardShellProps = {
     username: string;
   };
   resources: DashboardResource[];
+  versions: DashboardResource[];
+  isAdmin: boolean;
   socialLinks: {
     id: number;
     platform: string;
@@ -46,12 +50,14 @@ type DashboardShellProps = {
     availableBytes: number;
     usagePercent: number;
   };
-  initialView: "panel" | "links";
+  initialView: "panel" | "links" | "minecraft";
 };
 
 export function DashboardShell({
   user,
   resources,
+  versions,
+  isAdmin,
   socialLinks,
   resourcesStorage,
   initialView,
@@ -90,12 +96,17 @@ export function DashboardShell({
       icon: "stats" as const,
       href: "/dashboard",
     },
-    {
+    ...(isAdmin ? [{
+      id: "minecraft" as const,
+      label: "Minecraft",
+      icon: "folder" as const,
+      href: "/dashboard?view=minecraft",
+    }, {
       id: "links" as const,
       label: "Redes",
       icon: "link" as const,
       href: "/dashboard?view=links",
-    },
+    }] : []),
   ];
 
   const currentView = navigationItems.find((item) => item.id === view);
@@ -104,7 +115,7 @@ export function DashboardShell({
     <>
       <UploadForm
         title="Panel de recursos"
-        description="Sube un archivo nuevo y organiza su informacion desde la biblioteca."
+        description={isAdmin ? "Publica y organiza los recursos de la comunidad." : "Comparte tus recursos. Tienes 180 MB en total para archivos y portadas."}
         submitLabel="Subir recurso"
         successMessage="Recurso subido y publicado."
         publishOnUpload
@@ -114,7 +125,7 @@ export function DashboardShell({
       <ResourceLibrary
         resources={resources}
         kicker="Panel"
-        title="Tus recursos"
+        title={isAdmin ? "Recursos de la comunidad" : "Tus recursos"}
         description="Desde aqui puedes editar, ordenar y publicar lo que quieras mostrar en la web."
         emptyStateCopy="Todavia no has subido ningun recurso."
         showSearch
@@ -125,6 +136,14 @@ export function DashboardShell({
   );
 
   const renderLinksView = () => <SocialLinksManager links={socialLinks} />;
+  const renderMinecraftView = () => <>
+    <UploadForm key="minecraft" minecraftMode kicker="Solo administradores" title="Subir versión de Minecraft"
+      description="Añade el archivo, el número de versión, la edición y la plataforma."
+      submitLabel="Publicar versión" successMessage="Versión de Minecraft publicada." publishOnUpload storage={resourcesStorage} />
+    <ResourceLibrary resources={versions} kicker="Minecraft" title="Versiones publicadas"
+      description="Gestiona las descargas que aparecen en la sección Minecraft."
+      emptyStateCopy="Todavía no has subido ninguna versión de Minecraft." showSearch showEditControls className="library-panel dashboard-library-block" />
+  </>;
 
   return (
     <>
@@ -174,11 +193,10 @@ export function DashboardShell({
                   {currentView?.label ?? "Panel"}
                 </p>
                 <h1 className="page-title dashboard-page-title">
-                  Panel de control.
+                  {isAdmin ? "Panel de administración." : "Tu espacio."}
                 </h1>
                 <p className="lead">
-                  Hola, {displayName}. Desde este panel puedes subir recursos y
-                  gestionar los enlaces que aparecen en la pagina principal.
+                  Hola, {displayName}. {isAdmin ? "Gestiona los recursos, las versiones de Minecraft y las redes de la comunidad." : "Sube, edita y organiza tus recursos desde un solo lugar."}
                 </p>
               </div>
 
@@ -194,6 +212,7 @@ export function DashboardShell({
 
             {view === "panel" ? renderPanelView() : null}
             {view === "links" ? renderLinksView() : null}
+            {view === "minecraft" && isAdmin ? renderMinecraftView() : null}
           </section>
         </div>
       </main>

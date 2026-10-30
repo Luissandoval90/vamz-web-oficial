@@ -46,6 +46,13 @@ export const socialLinks = sqliteTable("social_links", {
     .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),
 });
 
+export const minecraftVersions = sqliteTable("minecraft_versions", {
+  resourceId: text("resource_id").primaryKey().references(() => resources.id, { onDelete: "cascade" }),
+  version: text("version").notNull(),
+  edition: text("edition", { enum: ["Bedrock", "Java"] }).notNull(),
+  platform: text("platform", { enum: ["Android", "Windows", "macOS", "Linux", "Multiplataforma"] }).notNull(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   resources: many(resources),
 }));

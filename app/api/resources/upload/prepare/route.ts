@@ -15,6 +15,9 @@ import {
   validateUpload,
 } from "@/lib/uploads";
 import { resourceMetadataSchema } from "@/lib/validators";
+import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
+import { minecraftVersionSchema } from "@/lib/minecraft-versions";
+import { getLocalUserUsedBytes } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -54,12 +57,12 @@ export async function POST(request: NextRequest) {
         publish?: unknown;
         title?: unknown;
         description?: unknown;
+        minecraft?: unknown;
       }
     | null;
 
   const file = parseUploadFile(body?.file);
   const cover = parseUploadFile(body?.cover);
-  const shouldPublish = body?.publish === true;
   const metadataResult = resourceMetadataSchema.safeParse({
     title: body?.title,
     description: body?.description,
@@ -76,12 +79,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (shouldPublish) {
-    const admin = await getRequestAdmin(request, user);
-
-    if (!admin) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
+  if (body?.minecraft != null) {
+    if (!await getRequestAdmin(request, user)) return NextResponse.json({ error: "Solo el administrador puede subir versiones de Minecraft." }, { status: 403 });
+    if (!minecraftVersionSchema.safeParse(body.minecraft).success) return NextResponse.json({ error: "Completa la versión, la edición y la plataforma de Minecraft." }, { status: 400 });
   }
 
   try {
@@ -118,15 +118,17 @@ export async function POST(request: NextRequest) {
     (sum, resource) => sum + resource.fileSize + resource.coverSize,
     0,
   );
+  const ownedBytes = existingResources.reduce((sum, item) => sum + item.fileSize + item.coverSize, 0);
+  const ownerUsed = isLocalStorage() ? Math.max(ownedBytes, await getLocalUserUsedBytes(user.id)) : ownedBytes;
   const incomingBytes = file.size + (cover?.size ?? 0);
   const storageLimitBytes = getStorageQuotaBytes();
 
-  if (currentlyUsedBytes + incomingBytes > storageLimitBytes) {
+  if ((!isAdminEmail(user.email) && ownerUsed + incomingBytes > getUserStorageQuotaBytes(user.email)) || currentlyUsedBytes + incomingBytes > storageLimitBytes) {
     return NextResponse.json(
       {
-        error: "No hay espacio suficiente para subir este recurso.",
+        error: !isAdminEmail(user.email) && ownerUsed + incomingBytes > getUserStorageQuotaBytes(user.email) ? "Tu cuenta tiene 180 MB en total. Elimina algún recurso para liberar espacio." : "No hay espacio suficiente para subir este recurso.",
       },
-      { status: 400 },
+      { status: 507 },
     );
   }
 

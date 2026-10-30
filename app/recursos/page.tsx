@@ -40,6 +40,10 @@ export default async function RecursosPage() {
           </div>
         </div>
         <ResourceCatalog resources={resources} />
+        <section className="contribute-banner">
+          <div><h2>Comparte tus creaciones.</h2><p>Crea una cuenta y dispone de 180 MB para tus recursos y portadas.</p></div>
+          <Link className="action-button is-accent" href="/dashboard">Subir un recurso</Link>
+        </section>
       </main>
     </PublicFrame>
   );

@@ -62,13 +62,14 @@ export const getLocalStorageUsage = async (root: string): Promise<number> => {
 
 const activeUploads = new Map<string, number>();
 
-export const writeLocalUpload = async ({ root, key, body, expectedSize, quotaBytes, minimumFreeBytes = 0, signal }: {
+export const writeLocalUpload = async ({ root, key, body, expectedSize, quotaBytes, minimumFreeBytes = 0, ownerQuotaBytes, signal }: {
   root: string;
   key: string;
   body: ReadableStream<Uint8Array>;
   expectedSize: number;
   quotaBytes: number;
   minimumFreeBytes?: number;
+  ownerQuotaBytes?: number;
   signal?: AbortSignal;
 }) => {
   if (!Number.isSafeInteger(expectedSize) || expectedSize <= 0) throw new StorageError("Tamaño de archivo no válido.");
@@ -81,6 +82,14 @@ export const writeLocalUpload = async ({ root, key, body, expectedSize, quotaByt
     const file = await resolveLocalFile(root, key, true);
     const pending = [...activeUploads.entries()].reduce((sum, [other, size]) => sum + (other === key ? 0 : size), 0);
     const [used, disk] = await Promise.all([getLocalStorageUsage(root), statfs(root)]);
+    if (ownerQuotaBytes !== undefined) {
+      const parts = key.split("/");
+      if (parts.length !== 3) throw new StorageError("El archivo no está vinculado a una cuenta.");
+      const prefix = `${parts[0]}/${parts[1]}/`;
+      const ownerUsed = await getLocalStorageUsage(path.join(root, parts[0], parts[1]));
+      const ownerPending = [...activeUploads.entries()].reduce((sum, [other, size]) => sum + (other !== key && other.startsWith(prefix) ? size : 0), 0);
+      if (ownerUsed + ownerPending + expectedSize > ownerQuotaBytes) throw new StorageError("Has alcanzado tus 180 MB. Elimina algún recurso para liberar espacio.", 507);
+    }
     if (used + pending + expectedSize > quotaBytes || Number(disk.bavail) * Number(disk.bsize) - pending - expectedSize < minimumFreeBytes) {
       throw new StorageError("No hay espacio suficiente para completar la subida.", 507);
     }

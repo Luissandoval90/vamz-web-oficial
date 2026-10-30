@@ -4,7 +4,8 @@ import type { NextRequest } from "next/server";
 
 import { getDb } from "@/db";
 import { resources } from "@/db/schema";
-import { getRequestAdmin, getRequestUser } from "@/lib/request-auth";
+import { getRequestUser } from "@/lib/request-auth";
+import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
 import { getStorageQuotaBytes } from "@/lib/uploads";
 import {
   deleteStoredFile,
@@ -42,14 +43,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (shouldPublish) {
-    const admin = await getRequestAdmin(request, user);
-
-    if (!admin) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
-  }
-
   const db = getDb();
   const existingResources = await db
     .select({
@@ -63,7 +56,7 @@ export async function POST(request: NextRequest) {
     0,
   );
   const incomingBytes = file.size + (cover?.size ?? 0);
-  const storageLimitBytes = getStorageQuotaBytes();
+  const storageLimitBytes = Math.min(getStorageQuotaBytes(), getUserStorageQuotaBytes(user.email));
 
   if (currentlyUsedBytes + incomingBytes > storageLimitBytes) {
     return NextResponse.json(
@@ -81,11 +74,13 @@ export async function POST(request: NextRequest) {
     savedFile = await saveUploadedFile(file, {
       label: "file",
       ownerId: user.id,
+      ownerQuotaBytes: isAdminEmail(user.email) ? undefined : getUserStorageQuotaBytes(user.email),
     });
     savedCover = cover
       ? await saveUploadedFile(cover, {
           label: "cover",
           ownerId: user.id,
+          ownerQuotaBytes: isAdminEmail(user.email) ? undefined : getUserStorageQuotaBytes(user.email),
           imageOnly: true,
         })
       : null;

@@ -10,6 +10,7 @@ import {
   getResourceDisplayTitle,
   getResourceKind,
 } from "@/lib/resource-utils";
+import type { MinecraftVersionMetadata } from "@/lib/minecraft-versions";
 
 type LibraryResource = {
   id: string;
@@ -24,6 +25,7 @@ type LibraryResource = {
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
+  minecraft?: MinecraftVersionMetadata | null;
 };
 
 type ResourceLibraryProps = {
@@ -154,6 +156,7 @@ function ResourceEditorCard({
               {resource.isPublished ? "Publicado" : "Privado"}
             </span>
             <span className="status-chip is-muted">{getResourceKind(resource.filename)}</span>
+            {resource.minecraft ? <span className="status-chip is-muted">{resource.minecraft.version} · {resource.minecraft.edition} · {resource.minecraft.platform}</span> : null}
           </div>
         </div>
 
@@ -168,7 +171,6 @@ function ResourceEditorCard({
                 ? `Publicado: ${formatResourceDate(resource.publishedAt)}`
                 : `Guardado: ${formatResourceDate(resource.createdAt)}`}
             </span>
-            <span>{resource.path}</span>
           </div>
         </div>
 
@@ -203,6 +205,12 @@ function ResourceEditorCard({
 
         {showEditControls && isEditing ? (
           <form className="resource-editor" onSubmit={handleSave}>
+            {resource.minecraft ? <fieldset className="minecraft-version-fields" disabled={saveBusy}>
+              <legend>Datos de Minecraft</legend>
+              <label className="field"><span className="field-label">Versión</span><input name="version" defaultValue={resource.minecraft.version} required maxLength={40} autoComplete="off" /></label>
+              <label className="field"><span className="field-label">Edición</span><select name="edition" defaultValue={resource.minecraft.edition}><option>Bedrock</option><option>Java</option></select></label>
+              <label className="field"><span className="field-label">Plataforma</span><select name="platform" defaultValue={resource.minecraft.platform}><option>Android</option><option>Windows</option><option>macOS</option><option>Linux</option><option>Multiplataforma</option></select></label>
+            </fieldset> : null}
             <div className="resource-editor-grid">
               <label className="field" htmlFor={`resource-title-${resource.id}`}>
                 <span className="field-label">Nombre visible</span>
@@ -279,7 +287,7 @@ export function ResourceLibrary({
     ? resources
     : resources.filter((resource) =>
         normalize(
-          `${resource.filename} ${resource.path} ${resource.title ?? ""} ${
+          `${resource.filename} ${resource.minecraft?.version ?? ""} ${resource.minecraft?.edition ?? ""} ${resource.minecraft?.platform ?? ""} ${resource.title ?? ""} ${
             resource.description ?? ""
           } ${getResourceKind(resource.filename)}`,
         ).includes(term),
@@ -297,7 +305,7 @@ export function ResourceLibrary({
           <div className="site-search-field">
             <input
               aria-label="Buscar recursos"
-              placeholder="Buscar por nombre, descripcion, archivo o ruta..."
+              placeholder="Buscar por nombre, versión o archivo…"
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}

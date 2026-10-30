@@ -43,6 +43,19 @@ test('bloquea rutas fuera del almacén y rangos inválidos', () => {
   assert.deepEqual(parseByteRange('bytes=-3', bytes.length), { start: bytes.length - 3, end: bytes.length - 1 });
 });
 
+test('impide superar la cuota personal con dos subidas concurrentes y separa las cuentas', async () => {
+  const value = Buffer.alloc(120);
+  const results = await Promise.allSettled([
+    write('uploads/quota-user/first.zip', value, { ownerQuotaBytes: 200 }),
+    write('uploads/quota-user/second.zip', value, { ownerQuotaBytes: 200 }),
+  ]);
+  assert.equal(results.filter(item => item.status === 'fulfilled').length, 1);
+  assert.equal(results.find(item => item.status === 'rejected').reason.status, 507);
+  assert.equal(await getLocalStorageUsage(path.join(root, 'uploads/quota-user')), 120);
+  await write('uploads/another-user/separate.zip', value, { ownerQuotaBytes: 200 });
+  await assert.rejects(write('uploads/quota-user/third.zip', value, { ownerQuotaBytes: 200 }), { status: 507 });
+});
+
 test('bloquea directorios enlazados fuera del almacén', async t => {
   const outside = await mkdtemp(path.join(base, 'outside-'));
   try { await symlink(outside, path.join(root, 'uploads/linked'), process.platform === 'win32' ? 'junction' : 'dir'); }

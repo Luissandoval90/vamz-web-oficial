@@ -13,6 +13,10 @@ export { StorageError };
 export const isLocalStorage = () => getEnv().STORAGE_DRIVER === "local";
 export const getStorageQuotaBytes = () => getEnv().RESOURCE_STORAGE_LIMIT_MB * 1024 * 1024;
 export const getLocalUsedBytes = () => getLocalStorageUsage(getLocalStorageRoot());
+export const getLocalUserUsedBytes = (userId: string) => {
+  if (!/^[a-zA-Z0-9_-]{1,80}$/.test(userId)) throw new StorageError("Usuario no válido.");
+  return getLocalStorageUsage(path.join(getLocalStorageRoot(), "uploads", userId));
+};
 
 const mimeTypes: Record<string, string> = {
   avif: "image/avif", bmp: "image/bmp", gif: "image/gif", jpeg: "image/jpeg", jpg: "image/jpeg",
@@ -34,7 +38,7 @@ export const isOwnedUploadKey = (key: string, ownerId: string) => {
   try { return validateObjectKey(key).startsWith(`uploads/${ownerId}/`); } catch { return false; }
 };
 
-type ValidateUploadOptions = { maxSizeInBytes?: number; required?: boolean; label?: string; imageOnly?: boolean; ownerId?: string };
+type ValidateUploadOptions = { maxSizeInBytes?: number; required?: boolean; label?: string; imageOnly?: boolean; ownerId?: string; ownerQuotaBytes?: number };
 export const validateUpload = (file: Pick<File, "name" | "size"> | null, { maxSizeInBytes, required = true, label = "archivo", imageOnly = false }: ValidateUploadOptions = {}) => {
   if (!file || file.size === 0) {
     if (!required) return;
@@ -50,7 +54,7 @@ export const saveUploadedFile = async (file: File, options: ValidateUploadOption
   validateUpload(file, options);
   const objectKey = createStoredObjectKey(file.name, options.ownerId);
   if (isLocalStorage()) {
-    await writeLocalUpload({ root: getLocalStorageRoot(), key: objectKey, body: file.stream(), expectedSize: file.size, quotaBytes: getStorageQuotaBytes(), minimumFreeBytes: getEnv().MIN_FREE_SPACE_MB * 1024 * 1024 });
+    await writeLocalUpload({ root: getLocalStorageRoot(), key: objectKey, body: file.stream(), expectedSize: file.size, quotaBytes: getStorageQuotaBytes(), ownerQuotaBytes: options.ownerQuotaBytes, minimumFreeBytes: getEnv().MIN_FREE_SPACE_MB * 1024 * 1024 });
   } else {
     await getR2Client().send(new PutObjectCommand({ Bucket: getR2BucketName(), Key: objectKey, Body: Buffer.from(await file.arrayBuffer()), ContentLength: file.size, ContentType: getContentTypeFromFilename(file.name) }));
   }

@@ -25,6 +25,7 @@ const columns = {
   users: ['id', 'email', 'username', 'password_hash', 'created_at'],
   resources: ['id', 'user_id', 'filename', 'path', 'title', 'description', 'cover_path', 'file_size', 'cover_size', 'is_published', 'published_at', 'created_at'],
   social_links: ['id', 'platform', 'url', 'icon', 'created_at', 'updated_at'],
+  minecraft_versions: ['resource_id', 'version', 'edition', 'platform'],
 };
 
 async function migrate() {
@@ -51,7 +52,8 @@ async function migrate() {
     const rows = {};
     // Una sola transacción de lectura mantiene una instantánea coherente de las tablas.
     transaction = await source.transaction('read');
-    for (const [table, names] of Object.entries(columns)) rows[table] = (await transaction.execute(`SELECT ${names.join(',')} FROM ${table}`)).rows;
+    const sourceTables = new Set((await transaction.execute("SELECT name FROM sqlite_master WHERE type='table'")).rows.map(row => row.name));
+    for (const [table, names] of Object.entries(columns)) rows[table] = table === 'minecraft_versions' && !sourceTables.has(table) ? [] : (await transaction.execute(`SELECT ${names.join(',')} FROM ${table}`)).rows;
     await transaction.commit();
     transaction.close();
     transaction = null;
@@ -129,6 +131,8 @@ async function run() {
 run().catch(error => {
   // Los errores del proveedor pueden contener URLs o credenciales; no se imprimen.
   console.error(error.constructor === Error ? error.message : 'La copia falló. Revisa la conexión y las credenciales del origen.');
+  const diagnostic = [error.name, error.code, error.cause?.code].filter(value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value));
+  if (diagnostic.length) console.error(`Diagnóstico: ${diagnostic.join(' / ')}`);
   console.error('No se ha modificado el origen. Si existe un directorio .vamz-migration-*, consérvalo para revisar la copia incompleta.');
   process.exitCode = 1;
 });

@@ -22,6 +22,12 @@ CREATE TABLE IF NOT EXISTS resources (
 );
 CREATE INDEX IF NOT EXISTS resources_user_id_idx ON resources(user_id);
 CREATE INDEX IF NOT EXISTS resources_is_published_idx ON resources(is_published);
+CREATE TABLE IF NOT EXISTS minecraft_versions (
+  resource_id TEXT PRIMARY KEY NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  version TEXT NOT NULL,
+  edition TEXT NOT NULL,
+  platform TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS social_links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   platform TEXT NOT NULL,
