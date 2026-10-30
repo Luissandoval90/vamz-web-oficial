@@ -31,7 +31,7 @@ const getSafeDownloadFilename = (filename: string) => {
       .replace(/["\\]/g, "")
       .trim() || "resource";
 
-  return `${safeBasename}${extension}`;
+  return `${safeBasename}${extension}`.replace(/[^\x20-\x7E]+/g, "-").replace(/["\\]/g, "");
 };
 
 const createContentDisposition = (filename: string, shouldDownload: boolean) => {

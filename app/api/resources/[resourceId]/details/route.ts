@@ -145,7 +145,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     if ((removeCover || savedCover) && currentResource.coverPath) {
-      await deleteStoredFile(currentResource.coverPath);
+      await deleteStoredFile(currentResource.coverPath).catch(() => {
+        console.error("No se pudo eliminar la portada anterior del almacenamiento.");
+      });
     }
 
     return NextResponse.json({ resource });

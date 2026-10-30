@@ -58,3 +58,5 @@ El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o su
 # Alojamiento en VPS
 
 La configuración para alojar la web, SQLite y los archivos en una sola VPS está en [deploy/VPS.md](deploy/VPS.md). Incluye Docker Compose, HTTPS y una herramienta para copiar los datos existentes sin modificar Turso ni R2.
+
+La dirección provisional del despliegue es `https://vps-e9431466.vps.ovh.net`. `vercel.json` redirige la dirección anterior a la VPS conservando la ruta. Al configurar un dominio propio, actualiza `VAMZ_DOMAIN` en la VPS y el destino de esa redirección.

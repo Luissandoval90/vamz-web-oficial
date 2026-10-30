@@ -54,6 +54,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         "Content-Type": file.contentType || getContentTypeFromFilename(resource.coverPath),
         "Content-Length": String(file.size),
         "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "sandbox",
         "Cache-Control": "private, no-store",
       },
     });

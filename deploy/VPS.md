@@ -1,5 +1,9 @@
 # VAMZ en una sola VPS
 
+El despliegue utiliza el mismo repositorio y la dirección provisional `https://vps-e9431466.vps.ovh.net`. La administración se encuentra en `/dashboard`; la gestión de instaladores está en `/dashboard?view=minecraft` y la biblioteca pública de versiones en `/minecraft`.
+
+Los usuarios necesitan registrarse antes de subir recursos y disponen de 180 MB por cuenta, contando archivos y portadas. El límite se aplica tanto al confirmar el recurso como al escribir archivos locales, incluidas las subidas simultáneas. Cada usuario gestiona sus propios recursos; el administrador también puede gestionar el catálogo completo, las versiones de Minecraft y las redes sociales. El registro público no permite reclamar un correo reservado para administración: se conservan las cuentas existentes durante la migración.
+
 La web se ejecuta con Next.js, SQLite local y archivos en disco. Caddy recibe las conexiones y gestiona HTTPS. No se necesitan Turso ni R2 después de verificar la migración. La configuración de Vercel sigue funcionando con `STORAGE_DRIVER=r2` o sin esa variable.
 
 ## Preparación
@@ -50,9 +54,9 @@ Si se trata de una instalación vacía, crea `data` con `mkdir -p data`; el prim
 
 ```bash
 sudo chown -R 1001:1001 ./data
-docker compose build
-docker compose up -d
-docker compose ps
+sudo docker compose build
+sudo docker compose up -d
+sudo docker compose ps
 ```
 
 Verifica primero que estás en el directorio correcto antes del cambio recursivo de propietario. Caddy necesita que el DNS apunte a la VPS y que los puertos 80/443 estén accesibles para emitir el certificado.
@@ -72,14 +76,14 @@ Las descargas se transmiten por streaming y admiten rangos. Las subidas nuevas l
 ## Copias y actualizaciones
 
 ```bash
-bash deploy/backup.sh
+sudo bash deploy/backup.sh
 ```
 
-La copia comprueba primero el espacio disponible, detiene brevemente la aplicación para guardar SQLite y los archivos de forma coherente y vuelve a arrancarla al terminar. Lee los datos desde un contenedor con el usuario de la aplicación y guarda la copia en `backups/`. Con el almacén lleno puede no caber otra copia en el mismo disco de 40 GB: usa `BACKUP_DIR=/ruta/otro-disco bash deploy/backup.sh` o realiza la copia hacia otro equipo. Una copia en el mismo disco no protege frente a su pérdida. El script no programa copias ni elimina las antiguas; vigila su espacio.
+La copia comprueba primero el espacio disponible, detiene brevemente la aplicación para guardar SQLite y los archivos de forma coherente y vuelve a arrancarla al terminar. Lee los datos desde un contenedor con el usuario de la aplicación y guarda la copia en `backups/`. Con el almacén lleno puede no caber otra copia en el mismo disco de 40 GB: usa `sudo BACKUP_DIR=/ruta/otro-disco bash deploy/backup.sh` o realiza la copia hacia otro equipo. Una copia en el mismo disco no protege frente a su pérdida. El script no programa copias ni elimina las antiguas; vigila su espacio.
 
 Para restaurar, detén la aplicación, conserva el directorio de datos actual y extrae la carpeta `data` de una copia verificada. Revisa el propietario 1001 antes de arrancar. No reemplaces una base SQLite mientras la aplicación la está usando.
 
-Antes de actualizar el código, haz una copia. Después ejecuta `docker compose build` y `docker compose up -d`. El directorio `data` se mantiene fuera de la imagen. No elimines los volúmenes de Caddy, que guardan los certificados.
+Antes de actualizar el código, haz una copia. Después ejecuta `sudo docker compose build` y `sudo docker compose up -d`. El directorio `data` se mantiene fuera de la imagen. No elimines los volúmenes de Caddy, que guardan los certificados.
 
 ## Comprobaciones locales
 

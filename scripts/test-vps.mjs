@@ -33,7 +33,7 @@ const stop = async () => {
   await done;
 };
 const start = async () => {
-  server = launch(process.env.VAMZ_TEST_STANDALONE === '1' ? ['.next/standalone/server.js'] : ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)]);
+  server = launch(process.env.VAMZ_TEST_STANDALONE === '1' ? [process.env.VAMZ_SERVER_ENTRY || '.next/standalone/server.js'] : ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', String(port)]);
   for (let i = 0; i < 90; i++) {
     if (server.exitCode !== null) throw new Error(`El servidor terminó antes de arrancar: ${logs}`);
     if (await fetch(`${base}/api/health`).then(r => r.ok).catch(() => false)) return;
