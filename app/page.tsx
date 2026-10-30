@@ -84,10 +84,10 @@ export default async function Home() {
             </div>
             <Image
               className="hero-character"
-              src="/remtop.webp"
-              alt="Personaje de Minecraft de VAMZ"
-              width={346}
-              height={567}
+              src="/vamz-character.webp"
+              alt="Skin de Minecraft de VAMZ con camiseta blanca y cabello negro"
+              width={344}
+              height={746}
               priority
             />
             <div className="hero-art-bottom">
