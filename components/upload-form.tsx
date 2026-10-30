@@ -36,6 +36,7 @@ type UploadFormProps = {
   submitLabel?: string;
   successMessage?: string;
   publishOnUpload?: boolean;
+  minecraftMode?: boolean;
   storage?: {
     limitBytes: number;
     usedBytes: number;
@@ -51,6 +52,7 @@ export function UploadForm({
   submitLabel = "Subir",
   successMessage = "Archivo subido.",
   publishOnUpload = false,
+  minecraftMode = false,
   storage,
 }: UploadFormProps) {
   const router = useRouter();
@@ -87,6 +89,16 @@ export function UploadForm({
       return;
     }
 
+    if (storage && file.size + (cover?.size ?? 0) > storage.availableBytes) {
+      setError(`No hay espacio suficiente. Te quedan ${formatBytes(storage.availableBytes)} para archivos y portadas.`);
+      return;
+    }
+    const minecraft = minecraftMode ? {
+      version: String(formData.get("version") ?? ""),
+      edition: String(formData.get("edition") ?? "Bedrock"),
+      platform: String(formData.get("platform") ?? "Android"),
+    } : undefined;
+
     setIsUploading(true);
     try {
       const prepareResponse = await fetch("/api/resources/upload/prepare", {
@@ -98,6 +110,7 @@ export function UploadForm({
           title: formData.get("title"),
           description: formData.get("description"),
           publish: publishOnUpload,
+          minecraft,
           file: {
             name: file.name,
             size: file.size,
@@ -162,7 +175,7 @@ export function UploadForm({
       const uploadFailed = uploadResponses.some((response) => !response.ok);
 
       if (uploadFailed) {
-        setError("No se pudo subir el archivo directamente a Cloudflare R2.");
+        setError("No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.");
         return;
       }
 
@@ -178,6 +191,7 @@ export function UploadForm({
           title: formData.get("title"),
           description: formData.get("description"),
           publish: publishOnUpload,
+          minecraft,
         }),
       });
 
@@ -210,6 +224,7 @@ export function UploadForm({
       ref={formRef}
       className="panel-card upload-card upload-card-lg"
       onSubmit={handleSubmit}
+      aria-busy={isPending}
     >
       <div className="upload-card-head">
         <div className="section-heading">
@@ -256,7 +271,7 @@ export function UploadForm({
           <div className="storage-progress">
             <div className="storage-progress-copy">
               <div className="storage-progress-copy-text">
-                <span>Uso de Cloudflare R2</span>
+                <span>Uso del almacenamiento</span>
                 <small>
                   {storage.availableBytes > 0
                     ? `Quedan ${formatBytes(storage.availableBytes)} disponibles`
@@ -268,7 +283,7 @@ export function UploadForm({
             <div
               className="storage-progress-bar"
               role="progressbar"
-              aria-label="Uso de Cloudflare R2"
+              aria-label="Uso del almacenamiento"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Number(storage.usagePercent.toFixed(4))}
@@ -293,6 +308,19 @@ export function UploadForm({
           </div>
         </section>
       ) : null}
+
+      {minecraftMode ? <fieldset className="minecraft-version-fields" disabled={isPending}>
+        <legend>Datos de la versión</legend>
+        <label className="field"><span className="field-label">Número de versión</span>
+          <input name="version" placeholder="Ej. 1.21.100" required maxLength={40} autoComplete="off" spellCheck={false} />
+        </label>
+        <label className="field"><span className="field-label">Edición</span>
+          <select name="edition" defaultValue="Bedrock"><option>Bedrock</option><option>Java</option></select>
+        </label>
+        <label className="field"><span className="field-label">Plataforma</span>
+          <select name="platform" defaultValue="Android"><option>Android</option><option>Windows</option><option>macOS</option><option>Linux</option><option>Multiplataforma</option></select>
+        </label>
+      </fieldset> : null}
 
       <div className="form-grid upload-meta-grid">
         <label className="field" htmlFor="resource-title">
@@ -383,7 +411,7 @@ export function UploadForm({
           <span className="inline-note">
             {storageLocked
               ? "No puedes subir mas archivos hasta liberar espacio."
-              : "Los archivos se suben directo a Cloudflare R2 para admitir tamanos grandes."}
+              : "Los archivos se guardan en tu biblioteca para descargarlos cuando quieras."}
           </span>
         </div>
 
@@ -392,13 +420,13 @@ export function UploadForm({
           type="submit"
           disabled={isPending || storageLocked}
         >
-          {isPending ? "Subiendo..." : submitLabel}
+          {isPending ? "Subiendo…" : submitLabel}
         </button>
       </div>
 
       {storageLocked ? (
         <p className="status-text is-error">
-          El almacenamiento de Cloudflare R2 ya llego al limite configurado.
+          El almacenamiento ya llegó al límite configurado.
           Elimina recursos o aumenta la capacidad antes de subir otro archivo.
         </p>
       ) : null}

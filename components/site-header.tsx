@@ -73,6 +73,9 @@ export function SiteHeader({ actions, extraContent }: SiteHeaderProps) {
             >
               Recursos
             </Link>
+            <Link href="/minecraft" aria-current={pathname === "/minecraft" ? "page" : undefined} onClick={() => setOpen(false)}>
+              Minecraft
+            </Link>
             <Link href="/#comunidad" onClick={() => setOpen(false)}>
               Comunidad <UiIcon name="external" />
             </Link>

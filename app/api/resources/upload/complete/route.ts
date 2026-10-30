@@ -1,121 +1,53 @@
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
 import { getDb } from "@/db";
-import { resources } from "@/db/schema";
+import { resources, minecraftVersions } from "@/db/schema";
 import { getRequestAdmin, getRequestUser } from "@/lib/request-auth";
-import { deleteStoredFile, getStoredFileSize, storedFileExists } from "@/lib/uploads";
+import { getStoredFileSize, getStorageQuotaBytes, isOwnedUploadKey, StorageError, validateUpload } from "@/lib/uploads";
 import { resourceMetadataSchema } from "@/lib/validators";
+import { getUserStorageQuotaBytes } from "@/lib/admin";
+import { minecraftVersionSchema } from "@/lib/minecraft-versions";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const user = await getRequestUser(request);
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const body = await request.json().catch(() => null) as { fileName?: unknown; fileKey?: unknown; coverKey?: unknown; publish?: unknown; title?: unknown; description?: unknown; minecraft?: unknown } | null;
+  if (typeof body?.fileName !== "string" || typeof body.fileKey !== "string" || !isOwnedUploadKey(body.fileKey, user.id) || (body.coverKey != null && (typeof body.coverKey !== "string" || !isOwnedUploadKey(body.coverKey, user.id) || body.coverKey === body.fileKey))) {
+    return NextResponse.json({ error: "No se pudo validar la propiedad de los archivos." }, { status: 400 });
   }
-
-  const body = (await request.json().catch(() => null)) as
-    | {
-        fileName?: unknown;
-        fileKey?: unknown;
-        coverKey?: unknown;
-        publish?: unknown;
-        title?: unknown;
-        description?: unknown;
-      }
-    | null;
-
-  if (typeof body?.fileName !== "string" || typeof body?.fileKey !== "string") {
-    return NextResponse.json({ error: "Invalid upload payload." }, { status: 400 });
-  }
-
+  const fileName = body.fileName;
+  const fileKey = body.fileKey;
   const coverKey = typeof body.coverKey === "string" ? body.coverKey : null;
-
   const shouldPublish = body.publish === true;
-  const metadataResult = resourceMetadataSchema.safeParse({
-    title: body.title,
-    description: body.description,
-  });
-
-  if (!metadataResult.success) {
-    return NextResponse.json(
-      { error: metadataResult.error.issues[0]?.message ?? "Invalid metadata." },
-      { status: 400 },
-    );
-  }
-
-  if (shouldPublish) {
-    const admin = await getRequestAdmin(request, user);
-
-    if (!admin) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
-  }
-
-  const fileExists = await storedFileExists(body.fileKey);
-  const coverExists = coverKey ? await storedFileExists(coverKey) : false;
-
-  if (!fileExists) {
-    return NextResponse.json({ error: "El archivo principal no termino de subirse a R2." }, { status: 400 });
-  }
-
-  if (body.coverKey && !coverExists) {
-    return NextResponse.json({ error: "La portada no termino de subirse a R2." }, { status: 400 });
-  }
-
-  const [fileSize, coverSize] = await Promise.all([
-    getStoredFileSize(body.fileKey),
-    coverKey ? getStoredFileSize(coverKey) : Promise.resolve(0),
-  ]);
-
-  const db = getDb();
-  const resourceId = crypto.randomUUID();
-  const publishedAt = shouldPublish ? new Date().toISOString() : null;
-  const metadata = metadataResult.data;
-
+  const metadataResult = resourceMetadataSchema.safeParse({ title: body.title, description: body.description });
+  if (!metadataResult.success) return NextResponse.json({ error: metadataResult.error.issues[0]?.message ?? "Metadatos no válidos." }, { status: 400 });
+  if (body.minecraft != null && !await getRequestAdmin(request, user)) return NextResponse.json({ error: "Solo el administrador puede subir versiones de Minecraft." }, { status: 403 });
+  const version = body.minecraft == null ? null : minecraftVersionSchema.safeParse(body.minecraft);
+  if (version && !version.success) return NextResponse.json({ error: "Completa los datos de la versión de Minecraft." }, { status: 400 });
   try {
-    await db.insert(resources).values({
-      id: resourceId,
-      userId: user.id,
-      filename: body.fileName,
-      path: body.fileKey,
-      title: metadata.title || null,
-      description: metadata.description || null,
-      coverPath: coverKey,
-      fileSize,
-      coverSize,
-      isPublished: shouldPublish,
-      publishedAt,
+    const [fileSize, coverSize] = await Promise.all([getStoredFileSize(fileKey), coverKey ? getStoredFileSize(coverKey) : Promise.resolve(0)]);
+    validateUpload({ name: fileName, size: fileSize });
+    if (coverKey) validateUpload({ name: coverKey, size: coverSize }, { imageOnly: true, label: "portada" });
+    const db = getDb();
+    const resource = await db.transaction(async tx => {
+      const [existing] = await tx.select().from(resources).where(and(eq(resources.path, fileKey), eq(resources.userId, user.id))).limit(1);
+      if (existing) return existing;
+      const owned = await tx.select({ fileSize: resources.fileSize, coverSize: resources.coverSize }).from(resources).where(eq(resources.userId, user.id));
+      const used = owned.reduce((sum, item) => sum + item.fileSize + item.coverSize, 0);
+      if (used + fileSize + coverSize > Math.min(getStorageQuotaBytes(), getUserStorageQuotaBytes(user.email))) throw new StorageError("No hay espacio suficiente en tu cuenta para publicar el recurso.", 507);
+      const [created] = await tx.insert(resources).values({
+        id: crypto.randomUUID(), userId: user.id, filename: fileName, path: fileKey,
+        title: metadataResult.data.title || null, description: metadataResult.data.description || null,
+        coverPath: coverKey, fileSize, coverSize, isPublished: shouldPublish, publishedAt: shouldPublish ? new Date().toISOString() : null,
+      }).returning();
+      if (version?.success) await tx.insert(minecraftVersions).values({ resourceId: created.id, ...version.data });
+      return created;
     });
-
-    return NextResponse.json(
-      {
-        resource: {
-          id: resourceId,
-          filename: body.fileName,
-          path: body.fileKey,
-          title: metadata.title || null,
-          description: metadata.description || null,
-          coverPath: coverKey,
-          fileSize,
-          coverSize,
-          isPublished: shouldPublish,
-          publishedAt,
-        },
-      },
-      { status: 201 },
-    );
+    return NextResponse.json({ resource }, { status: 201 });
   } catch (error) {
-    await deleteStoredFile(body.fileKey);
-    await deleteStoredFile(coverKey);
-
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Upload failed.",
-      },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: error instanceof StorageError ? error.message : "No se pudo finalizar la publicación. Puedes volver a intentarlo." }, { status: error instanceof StorageError ? error.status : 500 });
   }
 }

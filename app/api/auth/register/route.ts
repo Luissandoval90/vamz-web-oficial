@@ -6,6 +6,7 @@ import { createSessionToken, getSessionCookieOptions, SESSION_COOKIE_NAME } from
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { registerSchema } from "@/lib/validators";
+import { isAdminEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,10 @@ export async function POST(request: Request) {
       { error: "An account with that email already exists." },
       { status: 409 },
     );
+  }
+
+  if (isAdminEmail(parsed.data.email)) {
+    return NextResponse.json({ error: "Este correo está reservado para la administración. Utiliza tu cuenta existente o contacta con el administrador." }, { status: 403 });
   }
 
   const user = {

@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:init": "node scripts/init-db.mjs",
+    "test:storage": "node --experimental-strip-types --test tests/local-storage.test.mjs",
+    "test:migration": "node --test tests/migration.test.mjs",
+    "test:vps": "node scripts/test-vps.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"

@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { getDb } from "@/db";
-import { resources } from "@/db/schema";
+import { resources, minecraftVersions } from "@/db/schema";
 import { isAdminEmail } from "@/lib/admin";
-import { getRequestAdmin, getRequestUser } from "@/lib/request-auth";
+import { getRequestUser } from "@/lib/request-auth";
 import {
   deleteStoredFile,
   getContentTypeFromFilename,
-  getStoredFileBuffer,
+  getStoredFileStream,
+  StorageError,
 } from "@/lib/uploads";
 
 export const runtime = "nodejs";
@@ -30,7 +31,7 @@ const getSafeDownloadFilename = (filename: string) => {
       .replace(/["\\]/g, "")
       .trim() || "resource";
 
-  return `${safeBasename}${extension}`;
+  return `${safeBasename}${extension}`.replace(/[^\x20-\x7E]+/g, "-").replace(/["\\]/g, "");
 };
 
 const createContentDisposition = (filename: string, shouldDownload: boolean) => {
@@ -64,18 +65,26 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Resource not found." }, { status: 404 });
   }
 
-  let file: Awaited<ReturnType<typeof getStoredFileBuffer>>;
+  let file: Awaited<ReturnType<typeof getStoredFileStream>>;
 
   try {
-    file = await getStoredFileBuffer(resource.path);
-  } catch {
+    file = await getStoredFileStream(resource.path, request.headers.get("range"));
+  } catch (error) {
+    if (error instanceof StorageError && error.status === 416) return new NextResponse(null, { status: 416, headers: { "Content-Range": `bytes */${resource.fileSize}` } });
     return NextResponse.json({ error: "File is missing from storage." }, { status: 404 });
   }
 
-  return new NextResponse(file.buffer, {
+  return new NextResponse(file.stream, {
+    status: file.contentRange ? 206 : 200,
     headers: {
       "Content-Disposition": createContentDisposition(resource.filename, shouldDownload),
       "Content-Type": file.contentType || getContentTypeFromFilename(resource.filename),
+      "Content-Length": String(file.size),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox",
+      ...(file.contentRange ? { "Content-Range": file.contentRange } : {}),
     },
   });
 }
@@ -85,12 +94,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  const admin = await getRequestAdmin(request, user);
-
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as
@@ -111,7 +114,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       isPublished: body.isPublished,
       publishedAt: body.isPublished ? new Date().toISOString() : null,
     })
-    .where(and(eq(resources.id, resourceId), eq(resources.userId, admin.id)))
+    .where(and(eq(resources.id, resourceId), isAdminEmail(user.email) ? undefined : eq(resources.userId, user.id)))
     .returning({
       id: resources.id,
       isPublished: resources.isPublished,
@@ -132,22 +135,16 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const admin = await getRequestAdmin(request, user);
-
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
-
   const { resourceId } = await context.params;
   const db = getDb();
-  const [resource] = await db
-    .delete(resources)
-    .where(and(eq(resources.id, resourceId), eq(resources.userId, admin.id)))
-    .returning({
-      id: resources.id,
-      path: resources.path,
-      coverPath: resources.coverPath,
-    });
+  const resource = await db.transaction(async tx => {
+    const [owned] = await tx.select({ id: resources.id, path: resources.path, coverPath: resources.coverPath }).from(resources)
+      .where(and(eq(resources.id, resourceId), isAdminEmail(user.email) ? undefined : eq(resources.userId, user.id))).limit(1);
+    if (!owned) return null;
+    await tx.delete(minecraftVersions).where(eq(minecraftVersions.resourceId, resourceId));
+    await tx.delete(resources).where(eq(resources.id, resourceId));
+    return owned;
+  });
 
   if (!resource) {
     return NextResponse.json({ error: "Resource not found." }, { status: 404 });

@@ -39,7 +39,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           result?.error ??
             "No pudimos procesar tu solicitud. Inténtalo de nuevo.",
         );
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (failure) {
       setError(
@@ -62,7 +62,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         <p>
           {login
             ? "Inicia sesión con tu cuenta de VAMZ."
-            : "Crea tu cuenta y entra al universo de VAMZ."}
+            : "Regístrate para compartir recursos. Tu cuenta incluye 180 MB para archivos y portadas."}
         </p>
       </div>
       <form className="form-grid" onSubmit={handleSubmit} aria-busy={pending}>

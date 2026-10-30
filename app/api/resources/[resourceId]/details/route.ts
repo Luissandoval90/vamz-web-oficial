@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { getDb } from "@/db";
-import { resources } from "@/db/schema";
-import { getRequestAdmin, getRequestUser } from "@/lib/request-auth";
+import { resources, minecraftVersions, users } from "@/db/schema";
+import { minecraftVersionSchema } from "@/lib/minecraft-versions";
+import { getRequestUser } from "@/lib/request-auth";
+import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
 import {
   deleteStoredFile,
   getStorageQuotaBytes,
@@ -27,12 +29,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const admin = await getRequestAdmin(request, user);
-
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
-
   const { resourceId } = await context.params;
   const db = getDb();
   const [currentResource] = await db
@@ -44,9 +40,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       coverPath: resources.coverPath,
       coverSize: resources.coverSize,
       fileSize: resources.fileSize,
+      ownerEmail: users.email,
     })
     .from(resources)
-    .where(and(eq(resources.id, resourceId), eq(resources.userId, admin.id)))
+    .innerJoin(users, eq(users.id, resources.userId))
+    .where(and(eq(resources.id, resourceId), isAdminEmail(user.email) ? undefined : eq(resources.userId, user.id)))
     .limit(1);
 
   if (!currentResource) {
@@ -57,6 +55,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const coverEntry = formData.get("cover");
   const cover = coverEntry instanceof File && coverEntry.size > 0 ? coverEntry : null;
   const removeCover = formData.get("removeCover") === "true";
+  const version = formData.has("version") ? minecraftVersionSchema.safeParse({ version: formData.get("version"), edition: formData.get("edition"), platform: formData.get("platform") }) : null;
+  if (version && !isAdminEmail(user.email)) return NextResponse.json({ error: "Solo el administrador puede editar versiones de Minecraft." }, { status: 403 });
+  if (version && !version.success) return NextResponse.json({ error: "Revisa la versión, la edición y la plataforma." }, { status: 400 });
   const metadataResult = resourceMetadataSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         coverSize: resources.coverSize,
       })
       .from(resources)
-      .where(eq(resources.userId, admin.id));
+      .where(eq(resources.userId, currentResource.userId));
     const currentlyUsedBytes = existingResources.reduce(
       (sum, resource) => sum + resource.fileSize + resource.coverSize,
       0,
@@ -89,10 +90,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const nextTotalBytes =
       currentlyUsedBytes - currentResource.coverSize + nextCoverSizeCandidate;
 
-    if (nextTotalBytes > getStorageQuotaBytes()) {
+    if (nextTotalBytes > Math.min(getStorageQuotaBytes(), getUserStorageQuotaBytes(currentResource.ownerEmail))) {
       return NextResponse.json(
         {
-          error: "No hay espacio suficiente en Cloudflare R2 para actualizar la portada.",
+          error: "No hay espacio suficiente para actualizar la portada.",
         },
         { status: 400 },
       );
@@ -101,6 +102,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     savedCover = cover
       ? await saveUploadedFile(cover, {
           label: "cover",
+          ownerId: currentResource.userId,
+          ownerQuotaBytes: isAdminEmail(currentResource.ownerEmail) ? undefined : getUserStorageQuotaBytes(currentResource.ownerEmail),
           imageOnly: true,
         })
       : null;
@@ -113,7 +116,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const nextCoverSize =
       removeCover && !savedCover ? 0 : savedCover?.size ?? currentResource.coverSize;
 
-    const [resource] = await db
+    const [resource] = await db.transaction(async tx => {
+      if (version?.success) await tx.update(minecraftVersions).set(version.data).where(eq(minecraftVersions.resourceId, resourceId));
+      return tx
       .update(resources)
       .set({
         title: metadata.title || null,
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         coverPath: nextCoverPath,
         coverSize: nextCoverSize,
       })
-      .where(and(eq(resources.id, resourceId), eq(resources.userId, admin.id)))
+      .where(and(eq(resources.id, resourceId), isAdminEmail(user.email) ? undefined : eq(resources.userId, user.id)))
       .returning({
         id: resources.id,
         title: resources.title,
@@ -129,6 +134,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         coverPath: resources.coverPath,
         coverSize: resources.coverSize,
       });
+    });
 
     if (!resource) {
       if (savedCover) {
@@ -139,7 +145,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     if ((removeCover || savedCover) && currentResource.coverPath) {
-      await deleteStoredFile(currentResource.coverPath);
+      await deleteStoredFile(currentResource.coverPath).catch(() => {
+        console.error("No se pudo eliminar la portada anterior del almacenamiento.");
+      });
     }
 
     return NextResponse.json({ resource });
