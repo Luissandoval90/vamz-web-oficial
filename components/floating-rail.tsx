@@ -127,6 +127,7 @@ export function FloatingRail({
                 className={itemClassName}
                 data-item-id={item.id}
                 href={item.href}
+                aria-current={item.active ? "page" : undefined}
                 aria-label={item.label}
                 title={item.label}
               >

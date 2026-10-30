@@ -1,133 +1,46 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-
-import { desc, eq } from "drizzle-orm";
-
-import { ResourceThumb } from "@/components/resource-thumb";
-import { PublicPageShell } from "@/components/public-page-shell";
-import { getDb } from "@/db";
-import { resources, users } from "@/db/schema";
-import { formatBytes, getResourceKind } from "@/lib/resource-utils";
-import { getDisplayUsername } from "@/lib/usernames";
+import { PublicFrame } from "@/components/public-frame";
+import { ResourceCatalog } from "@/components/resource-catalog";
+import { getPublicResources } from "@/lib/public-content";
 
 export const dynamic = "force-dynamic";
-
-const resourceDateFormatter = new Intl.DateTimeFormat("es-PE", {
-  dateStyle: "medium",
-});
+export const metadata: Metadata = {
+  title: "Recursos",
+  description:
+    "Explora y descarga los recursos y portadas publicados por VAMZ Studio.",
+};
 
 export default async function RecursosPage() {
-  const db = getDb();
-  const publishedResources = await db
-    .select({
-      id: resources.id,
-      filename: resources.filename,
-      title: resources.title,
-      description: resources.description,
-      coverPath: resources.coverPath,
-      fileSize: resources.fileSize,
-      createdAt: resources.createdAt,
-      publishedAt: resources.publishedAt,
-      username: users.username,
-      email: users.email,
-    })
-    .from(resources)
-    .innerJoin(users, eq(users.id, resources.userId))
-    .where(eq(resources.isPublished, true))
-    .orderBy(desc(resources.publishedAt), desc(resources.createdAt));
-
+  const resources = await getPublicResources();
   return (
-    <PublicPageShell
-      active="resources"
-      subtitle="Recursos"
-      title="Recursos publicados."
-      description="En esta seccion estan los archivos que ya fueron publicados para descarga y consulta."
-      imageSrc="/rem3.jpg"
-      imageAlt="Recursos"
-      pageBackdrop={
-        <div className="hero-video-shell" aria-hidden="true">
-          <video
-            className="hero-video"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-          >
-            <source src="/minecraft-hero-bg.mp4" type="video/mp4" />
-          </video>
-        </div>
-      }
-      heroFooter={
-        <div className="hero-tags">
-          <span className="tag-chip">Publico</span>
-          <span className="tag-chip">Descargas</span>
-          <span className="tag-chip">Biblioteca</span>
-        </div>
-      }
-    >
-      {publishedResources.length > 0 ? (
-        <article className="panel-card library-panel animate-up delay-1">
-          <div className="section-heading">
-            <p className="section-kicker">Biblioteca</p>
-            <h2 className="section-title-sm">Recursos disponibles</h2>
+    <PublicFrame>
+      <main className="page-shell catalog-page" id="contenido">
+        <nav className="breadcrumbs" aria-label="Ruta de navegación">
+          <Link href="/">Inicio</Link>
+          <span>/</span>
+          <span aria-current="page">Recursos</span>
+        </nav>
+        <div className="catalog-page-heading">
+          <div>
+            <p className="section-kicker">EXPLORA. ENCUENTRA. CREA.</p>
+            <h1 className="page-title">
+              Tu siguiente idea
+              <br />
+              empieza <span className="text-accent">aquí.</span>
+            </h1>
+            <p className="lead">
+              Todos los recursos de VAMZ, sin vueltas.
+              <br />
+              Encuentra lo que buscas y hazlo parte de tu mundo.
+            </p>
           </div>
-
-          <div className="public-resource-grid">
-            {publishedResources.map((resource) => {
-              const publishedOn = resource.publishedAt ?? resource.createdAt;
-              const resourceTitle = resource.title?.trim() || resource.filename;
-              const resourceAuthor = getDisplayUsername(resource.username, resource.email);
-
-              return (
-                <article className="resource-spotlight-card" key={resource.id}>
-                  <Link
-                    className="resource-spotlight-link"
-                    href={`/recurso/${resource.id}`}
-                    aria-label={`Abrir ${resourceTitle}`}
-                  >
-                    <div className="resource-spotlight-media">
-                      <div className="resource-spotlight-cover">
-                        <ResourceThumb resource={resource} />
-                      </div>
-
-                      <div className="resource-spotlight-top">
-                        <span className="resource-spotlight-chip is-status">Publicado</span>
-                        <span className="resource-spotlight-chip is-size">
-                          {formatBytes(resource.fileSize)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="resource-spotlight-body">
-                      <div className="resource-spotlight-main">
-                        <div className="resource-spotlight-title-row">
-                          <p className="resource-spotlight-title">{resourceTitle}</p>
-                          <span className="resource-spotlight-open" aria-hidden="true">
-                            ↗
-                          </span>
-                        </div>
-                        <p className="resource-spotlight-author">Por {resourceAuthor}</p>
-                      </div>
-
-                      <div className="resource-spotlight-foot">
-                        <div className="resource-spotlight-rating">
-                          <span className="resource-spotlight-star" aria-hidden="true">
-                            ★
-                          </span>
-                          <span>{resourceDateFormatter.format(new Date(publishedOn))}</span>
-                        </div>
-                        <span className="resource-spotlight-type">
-                          {getResourceKind(resource.filename)}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </article>
-              );
-            })}
+          <div className="catalog-heading-mark" aria-hidden="true">
+            ↙
           </div>
-        </article>
-      ) : null}
-    </PublicPageShell>
+        </div>
+        <ResourceCatalog resources={resources} />
+      </main>
+    </PublicFrame>
   );
 }

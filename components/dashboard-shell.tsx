@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import { FloatingRail } from "@/components/floating-rail";
 import { LogoutButton } from "@/components/logout-button";
 import { ResourceLibrary } from "@/components/resource-library";
 import { SocialLinksManager } from "@/components/social-links-manager";
 import { UploadForm } from "@/components/upload-form";
-import {
-  getFileExtension,
-  imageExtensions,
-} from "@/lib/resource-utils";
+import { getFileExtension, imageExtensions } from "@/lib/resource-utils";
 
 type DashboardResource = {
   id: string;
@@ -58,12 +56,14 @@ export function DashboardShell({
   resourcesStorage,
   initialView,
 }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const view = initialView;
 
   const displayName = user.username || user.email;
   const featuredResource = resources.find(
-    (resource) => resource.coverPath || imageExtensions.has(getFileExtension(resource.filename)),
+    (resource) =>
+      resource.coverPath ||
+      imageExtensions.has(getFileExtension(resource.filename)),
   );
   const featuredPreview = featuredResource
     ? featuredResource.coverPath
@@ -87,12 +87,12 @@ export function DashboardShell({
     {
       id: "panel" as const,
       label: "Panel",
-      icon: "spark" as const,
+      icon: "stats" as const,
       href: "/dashboard",
     },
     {
       id: "links" as const,
-      label: "Links",
+      label: "Redes",
       icon: "link" as const,
       href: "/dashboard?view=links",
     },
@@ -129,11 +129,17 @@ export function DashboardShell({
   return (
     <>
       <header className="site-header dashboard-topbar dashboard-topbar-plain">
+        <Link className="wordmark" href="/">
+          VAMZ
+          <span className="brand-square" />
+        </Link>
         <div className="site-actions">
           <div className="topbar-pill">{displayName}</div>
           <button
             className="action-button is-dark mobile-toggle"
             type="button"
+            aria-expanded={sidebarOpen}
+            aria-controls="dashboard-navigation"
             onClick={() => setSidebarOpen((current) => !current)}
           >
             Menu
@@ -142,10 +148,14 @@ export function DashboardShell({
         </div>
       </header>
 
-      <main className="page-shell page-body">
+      <main id="contenido" className="page-shell page-body">
         <div className="content-layout dashboard-layout">
-          <div className={`dashboard-sidebar-wrap ${sidebarOpen ? "is-open" : ""}`}>
+          <div
+            id="dashboard-navigation"
+            className={`dashboard-sidebar-wrap ${sidebarOpen ? "is-open" : ""}`}
+          >
             <FloatingRail
+              showInlineLabels
               title="Secciones"
               items={navigationItems.map((item) => ({
                 id: item.id,
@@ -158,19 +168,27 @@ export function DashboardShell({
           </div>
 
           <section className="page-main dashboard-main">
-          <section className="panel-card hero-panel dashboard-hero-panel">
+            <section className="panel-card hero-panel dashboard-hero-panel">
               <div className="hero-copy">
-                <p className="section-kicker">{currentView?.label ?? "Panel"}</p>
-                <h1 className="page-title dashboard-page-title">Panel de control.</h1>
+                <p className="section-kicker">
+                  {currentView?.label ?? "Panel"}
+                </p>
+                <h1 className="page-title dashboard-page-title">
+                  Panel de control.
+                </h1>
                 <p className="lead">
-                  Hola, {displayName}. Desde este panel puedes subir recursos y gestionar los
-                  enlaces que aparecen en la pagina principal.
+                  Hola, {displayName}. Desde este panel puedes subir recursos y
+                  gestionar los enlaces que aparecen en la pagina principal.
                 </p>
               </div>
 
               <div className="hero-media dashboard-hero-media">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="hero-media-image" src={featuredPreview} alt="Preview destacado" />
+                <img
+                  className="hero-media-image"
+                  src={featuredPreview}
+                  alt="Preview destacado"
+                />
               </div>
             </section>
 

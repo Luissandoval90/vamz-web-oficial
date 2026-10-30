@@ -1,10 +1,17 @@
 "use client";
+import Image from "next/image";
+import { useState } from "react";
+import {
+  getFileExtension,
+  getResourceKind,
+  imageExtensions,
+} from "@/lib/resource-utils";
+const fallback = "/minecraft-landscape.webp";
 
-import { useMemo, useState } from "react";
-
-import { getFileExtension, getResourceKind, imageExtensions } from "@/lib/resource-utils";
-
-type ResourceThumbProps = {
+export function ResourceThumb({
+  resource,
+  previewUrl,
+}: {
   resource: {
     id: string;
     filename: string;
@@ -12,57 +19,32 @@ type ResourceThumbProps = {
     coverPath?: string | null;
   };
   previewUrl?: string;
-};
-
-const DEFAULT_RESOURCE_PREVIEW = "/rem3.jpg";
-
-export function ResourceThumb({ resource, previewUrl }: ResourceThumbProps) {
-  const kind = getResourceKind(resource.filename);
-  const alt = resource.title?.trim() || resource.filename;
-
-  const resolvedPreviewUrl = useMemo(() => {
-    if (previewUrl) {
-      return previewUrl;
-    }
-
-    if (resource.coverPath) {
-      return `/api/resources/${resource.id}/cover`;
-    }
-
-    if (imageExtensions.has(getFileExtension(resource.filename))) {
-      return `/api/resources/${resource.id}`;
-    }
-
-    return DEFAULT_RESOURCE_PREVIEW;
-  }, [previewUrl, resource.coverPath, resource.filename, resource.id]);
-
+}) {
+  const primary =
+    previewUrl ||
+    (resource.coverPath
+      ? `/api/resources/${resource.id}/cover`
+      : imageExtensions.has(getFileExtension(resource.filename))
+        ? `/api/resources/${resource.id}`
+        : fallback);
   const [failedUrls, setFailedUrls] = useState<string[]>([]);
-  const hasPrimaryFailed = failedUrls.includes(resolvedPreviewUrl);
-  const hasDefaultFailed = failedUrls.includes(DEFAULT_RESOURCE_PREVIEW);
-  const currentSrc = hasPrimaryFailed ? DEFAULT_RESOURCE_PREVIEW : resolvedPreviewUrl;
-  const showFallback = hasPrimaryFailed && hasDefaultFailed;
-
-  if (showFallback) {
+  const src = failedUrls.includes(primary) ? fallback : primary;
+  if (failedUrls.includes(src))
     return (
       <div className="resource-thumb-fallback">
-        <span>{kind}</span>
+        <span>{getResourceKind(resource.filename)}</span>
       </div>
     );
-  }
-
   return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="resource-thumb-image"
-        src={currentSrc}
-        alt={alt}
-        onError={() => {
-          setFailedUrls((current) =>
-            current.includes(currentSrc) ? current : [...current, currentSrc],
-          );
-        }}
-      />
-    </>
+    <Image
+      className="resource-thumb-image"
+      src={src}
+      alt={resource.title?.trim() || resource.filename}
+      width={800}
+      height={500}
+      sizes="(max-width: 420px) 100vw, (max-width: 700px) 50vw, 33vw"
+      unoptimized={src.startsWith("/api/")}
+      onError={() => setFailedUrls((current) => [...current, src])}
+    />
   );
 }

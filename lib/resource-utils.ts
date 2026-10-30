@@ -17,18 +17,18 @@ export const getResourceKind = (filename: string) => {
   const extension = getFileExtension(filename);
 
   if (imageExtensions.has(extension)) {
-    return "Preview";
+    return "Imagen";
   }
 
   if (archiveExtensions.has(extension)) {
-    return "Archive";
+    return "Pack / Archivo";
   }
 
   if (extension === "pdf") {
-    return "Document";
+    return "Documento";
   }
 
-  return extension ? extension.toUpperCase() : "File";
+  return extension ? extension.toUpperCase() : "Archivo";
 };
 
 export const getResourceDisplayTitle = (title: string | null | undefined, filename: string) =>
