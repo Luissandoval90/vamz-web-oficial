@@ -7,6 +7,7 @@ import { requireAdminUser } from "@/lib/server-auth";
 import { getDisplayUsername } from "@/lib/usernames";
 import { getLocalUsedBytes, getLocalUserUsedBytes, isLocalStorage } from "@/lib/uploads";
 import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
+import { getEnv } from "@/lib/env";
 
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<{ view?: string }> }) {
   const user = await requireAdminUser();
@@ -27,6 +28,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
   return <DashboardShell
     user={{ ...user, username: getDisplayUsername(profiles[0]?.username ?? user.username, user.email) }}
     isAdmin={admin}
+    maxUploadBytes={getEnv().MAX_UPLOAD_MB * 1024 * 1024}
     resources={items.filter(item => !item.minecraft)}
     versions={items.filter(item => item.minecraft)}
     socialLinks={links}

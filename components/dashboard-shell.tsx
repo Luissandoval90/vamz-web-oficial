@@ -36,6 +36,7 @@ type DashboardShellProps = {
   resources: DashboardResource[];
   versions: DashboardResource[];
   isAdmin: boolean;
+  maxUploadBytes: number;
   socialLinks: {
     id: number;
     platform: string;
@@ -58,6 +59,7 @@ export function DashboardShell({
   resources,
   versions,
   isAdmin,
+  maxUploadBytes,
   socialLinks,
   resourcesStorage,
   initialView,
@@ -120,6 +122,7 @@ export function DashboardShell({
         successMessage="Recurso subido y publicado."
         publishOnUpload
         storage={resourcesStorage}
+        maxUploadBytes={maxUploadBytes}
       />
 
       <ResourceLibrary
@@ -139,7 +142,7 @@ export function DashboardShell({
   const renderMinecraftView = () => <>
     <UploadForm key="minecraft" minecraftMode kicker="Solo administradores" title="Subir versión de Minecraft"
       description="Añade el archivo, el número de versión, la edición y la plataforma."
-      submitLabel="Publicar versión" successMessage="Versión de Minecraft publicada." publishOnUpload storage={resourcesStorage} />
+      submitLabel="Publicar versión" successMessage="Versión de Minecraft publicada." publishOnUpload storage={resourcesStorage} maxUploadBytes={maxUploadBytes} />
     <ResourceLibrary resources={versions} kicker="Minecraft" title="Versiones publicadas"
       description="Gestiona las descargas que aparecen en la sección Minecraft."
       emptyStateCopy="Todavía no has subido ninguna versión de Minecraft." showSearch showEditControls className="library-panel dashboard-library-block" />
