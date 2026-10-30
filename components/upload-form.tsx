@@ -59,26 +59,35 @@ export function UploadForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [coverName, setCoverName] = useState("");
   const [fileName, setFileName] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const formattedUsagePercent = storage ? formatUsagePercent(storage.usagePercent) : "0%";
-  const visibleUsageWidth = storage ? getVisibleUsageWidth(storage.usagePercent) : 0;
+  const [isRefreshing, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
+  const isPending = isUploading || isRefreshing;
+  const formattedUsagePercent = storage
+    ? formatUsagePercent(storage.usagePercent)
+    : "0%";
+  const visibleUsageWidth = storage
+    ? getVisibleUsageWidth(storage.usagePercent)
+    : 0;
   const storageLocked = Boolean(storage && storage.availableBytes <= 0);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isPending || storageLocked) return;
     setError(null);
     setSuccess(null);
 
     const formData = new FormData(event.currentTarget);
     const file = formData.get("file");
     const coverEntry = formData.get("cover");
-    const cover = coverEntry instanceof File && coverEntry.size > 0 ? coverEntry : null;
+    const cover =
+      coverEntry instanceof File && coverEntry.size > 0 ? coverEntry : null;
 
     if (!(file instanceof File) || file.size === 0) {
       setError("Selecciona un archivo valido.");
       return;
     }
 
+    setIsUploading(true);
     try {
       const prepareResponse = await fetch("/api/resources/upload/prepare", {
         method: "POST",
@@ -104,13 +113,23 @@ export function UploadForm({
         }),
       });
 
-      const prepareResult = (await prepareResponse.json().catch(() => null)) as
-        | {
-            error?: string;
-            file?: { key: string; uploadUrl: string; contentType: string; originalName: string };
-            cover?: { key: string; uploadUrl: string; contentType: string; originalName: string } | null;
-          }
-        | null;
+      const prepareResult = (await prepareResponse
+        .json()
+        .catch(() => null)) as {
+        error?: string;
+        file?: {
+          key: string;
+          uploadUrl: string;
+          contentType: string;
+          originalName: string;
+        };
+        cover?: {
+          key: string;
+          uploadUrl: string;
+          contentType: string;
+          originalName: string;
+        } | null;
+      } | null;
 
       if (!prepareResponse.ok || !prepareResult?.file) {
         setError(prepareResult?.error ?? "No se pudo preparar la subida.");
@@ -162,7 +181,9 @@ export function UploadForm({
         }),
       });
 
-      const completeResult = (await completeResponse.json().catch(() => null)) as { error?: string } | null;
+      const completeResult = (await completeResponse
+        .json()
+        .catch(() => null)) as { error?: string } | null;
 
       if (!completeResponse.ok) {
         setError(completeResult?.error ?? "No se pudo finalizar la subida.");
@@ -179,11 +200,17 @@ export function UploadForm({
       });
     } catch {
       setError("Ocurrio un problema al subir el archivo.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
-    <form ref={formRef} className="panel-card upload-card upload-card-lg" onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className="panel-card upload-card upload-card-lg"
+      onSubmit={handleSubmit}
+    >
       <div className="upload-card-head">
         <div className="section-heading">
           <p className="section-kicker">{kicker}</p>
@@ -192,26 +219,37 @@ export function UploadForm({
         </div>
 
         <div className="upload-card-badges" aria-hidden="true">
-          <span className="upload-card-badge is-accent">Publicacion directa</span>
+          <span className="upload-card-badge is-accent">
+            Publicacion directa
+          </span>
           <span className="upload-card-badge">Visible en la web</span>
           <span className="upload-card-badge">Gestion interna</span>
         </div>
       </div>
 
       {storage ? (
-        <section className="storage-panel upload-storage-panel" aria-label="Resumen de almacenamiento">
+        <section
+          className="storage-panel upload-storage-panel"
+          aria-label="Resumen de almacenamiento"
+        >
           <div className="storage-grid">
             <article className="subtle-card">
               <p className="section-kicker">Total</p>
-              <h3 className="section-title-sm">{formatBytes(storage.limitBytes)}</h3>
+              <h3 className="section-title-sm">
+                {formatBytes(storage.limitBytes)}
+              </h3>
             </article>
             <article className="subtle-card">
               <p className="section-kicker">Ocupado</p>
-              <h3 className="section-title-sm">{formatBytes(storage.usedBytes)}</h3>
+              <h3 className="section-title-sm">
+                {formatBytes(storage.usedBytes)}
+              </h3>
             </article>
             <article className="subtle-card">
               <p className="section-kicker">Disponible</p>
-              <h3 className="section-title-sm">{formatBytes(storage.availableBytes)}</h3>
+              <h3 className="section-title-sm">
+                {formatBytes(storage.availableBytes)}
+              </h3>
             </article>
           </div>
 
@@ -248,7 +286,8 @@ export function UploadForm({
             <div className="storage-progress-meta" aria-hidden="true">
               <span>{formatBytes(storage.usedBytes)} usados</span>
               <strong>
-                {formatBytes(storage.usedBytes)} / {formatBytes(storage.limitBytes)}
+                {formatBytes(storage.usedBytes)} /{" "}
+                {formatBytes(storage.limitBytes)}
               </strong>
             </div>
           </div>
@@ -300,7 +339,9 @@ export function UploadForm({
                 type="file"
                 name="cover"
                 accept="image/*"
-                onChange={(event) => setCoverName(event.target.files?.[0]?.name ?? "")}
+                onChange={(event) =>
+                  setCoverName(event.target.files?.[0]?.name ?? "")
+                }
               />
             </div>
           </div>
@@ -318,14 +359,18 @@ export function UploadForm({
             </div>
 
             <div className="upload-box-foot">
-              <span className="upload-file-state">{fileName || "Ningun archivo seleccionado"}</span>
+              <span className="upload-file-state">
+                {fileName || "Ningun archivo seleccionado"}
+              </span>
               <input
                 className="file-input file-input-lg"
                 id="resource-upload"
                 type="file"
                 name="file"
                 required
-                onChange={(event) => setFileName(event.target.files?.[0]?.name ?? "")}
+                onChange={(event) =>
+                  setFileName(event.target.files?.[0]?.name ?? "")
+                }
               />
             </div>
           </div>
@@ -342,19 +387,31 @@ export function UploadForm({
           </span>
         </div>
 
-        <button className="action-button is-accent" type="submit" disabled={isPending || storageLocked}>
+        <button
+          className="action-button is-accent"
+          type="submit"
+          disabled={isPending || storageLocked}
+        >
           {isPending ? "Subiendo..." : submitLabel}
         </button>
       </div>
 
       {storageLocked ? (
         <p className="status-text is-error">
-          El almacenamiento de Cloudflare R2 ya llego al limite configurado. Elimina recursos o
-          aumenta la capacidad antes de subir otro archivo.
+          El almacenamiento de Cloudflare R2 ya llego al limite configurado.
+          Elimina recursos o aumenta la capacidad antes de subir otro archivo.
         </p>
       ) : null}
-      {error ? <p className="status-text is-error">{error}</p> : null}
-      {success ? <p className="status-text is-ok">{success}</p> : null}
+      {error ? (
+        <p className="status-text is-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p className="status-text is-ok" role="status">
+          {success}
+        </p>
+      ) : null}
     </form>
   );
 }

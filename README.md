@@ -1,181 +1,57 @@
-# VAMZ Resource Hub
+# VAMZ Studio
 
-Full-stack web application built with Next.js App Router, TypeScript, Drizzle ORM, Turso, and Cloudflare R2.
+Web de recursos y comunidad construida con Next.js, React y TypeScript. La interfaz utiliza una navegación común, una biblioteca con búsqueda, filtros por tipo y ordenación, y un panel privado para gestionar archivos y redes sociales.
 
-## Features
+## Desarrollo
 
-- Email/password registration and login
-- JWT session authentication
-- Protected admin dashboard
-- Public social links section
-- Resource uploads with metadata stored in Turso
-- File storage backed by Cloudflare R2
-- Vercel-ready build and runtime setup
+Requiere Node.js 20.9 o superior.
 
-## Stack
-
-- Framework: Next.js (App Router)
-- Language: TypeScript
-- ORM: Drizzle ORM
-- Database: Turso (`libSQL`)
-- File storage: Cloudflare R2
-- Styling: TailwindCSS
-- Hosting target: Vercel
-
-## Folder Structure
-
-```text
-.
-|- app/
-|  |- api/
-|  |  |- auth/
-|  |  |  |- login/route.ts
-|  |  |  |- logout/route.ts
-|  |  |  \- register/route.ts
-|  |  \- resources/
-|  |     |- [resourceId]/route.ts
-|  |     |- list/route.ts
-|  |     \- upload/route.ts
-|  |- login/page.tsx
-|  |- register/page.tsx
-|  |- globals.css
-|  |- layout.tsx
-|  \- page.tsx
-|- components/
-|  |- auth-form.tsx
-|  |- logout-button.tsx
-|  \- upload-form.tsx
-|- db/
-|  |- index.ts
-|  \- schema.ts
-|- drizzle/
-|  |- 0000_wild_makkari.sql
-|  \- meta/
-|- lib/
-|  |- auth.ts
-|  |- env.ts
-|  |- request-auth.ts
-|  |- server-auth.ts
-|  |- uploads.ts
-|  \- validators.ts
-|- uploads/
-|  \- .gitkeep
-|- drizzle.config.ts
-|- next.config.ts
-|- proxy.ts
-|- .env.example
-└- package.json
-```
-
-## Database Schema
-
-### `users`
-
-- `id`
-- `email`
-- `password_hash`
-- `created_at`
-
-### `resources`
-
-- `id`
-- `user_id`
-- `filename`
-- `path`
-- `created_at`
-
-## Environment Variables
-
-Create a `.env.local` file from `.env.example`:
-
-```bash
-Copy-Item .env.example .env.local
-```
-
-Example values:
-
-```env
-JWT_SECRET=replace-with-a-long-random-secret-at-least-32-characters
-TURSO_DATABASE_URL=libsql://your-database-name-your-team.turso.io
-TURSO_AUTH_TOKEN=your-turso-auth-token
-ADMIN_EMAILS=admin@example.com
-R2_ACCOUNT_ID=your-cloudflare-account-id
-R2_BUCKET=your-r2-bucket-name
-R2_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
-R2_ACCESS_KEY_ID=your-r2-access-key-id
-R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
-RESOURCE_STORAGE_LIMIT_MB=10240
-TURSO_STORAGE_LIMIT_GB=5
-```
-
-## Connect Turso
-
-1. Create a Turso database.
-2. Get the database URL.
-3. Create an auth token for the database.
-4. Put both values into `.env.local`.
-5. Push the schema:
-
-```bash
-npm install
-npm run db:push
-```
-
-If you want a generated SQL migration file before pushing, it is already included in `drizzle/0000_wild_makkari.sql`. You can regenerate it with:
-
-```bash
-npm run db:generate
-```
-
-## Run Locally
-
-```bash
-npm install
-npm run db:push
+```powershell
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+La portada, la biblioteca vacía y los formularios se pueden revisar sin credenciales. Si no se configura Turso, la vista pública muestra los enlaces oficiales y no simula archivos publicados. Para probar cuentas, el panel y los recursos reales se necesitan las variables de entorno.
 
-## API Routes
+## Configuración
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `POST /api/resources/upload`
-- `GET /api/resources/list`
-- `GET /api/resources/[resourceId]`
-
-## Deployment On Vercel
-
-1. Push the project to GitHub, GitLab, or Bitbucket.
-2. Import the repository into Vercel.
-3. Add these environment variables in the Vercel project settings:
-   - `JWT_SECRET`
-   - `TURSO_DATABASE_URL`
-   - `TURSO_AUTH_TOKEN`
-   - `ADMIN_EMAILS`
-   - `R2_ACCOUNT_ID`
-   - `R2_BUCKET`
-   - `R2_ENDPOINT`
-   - `R2_ACCESS_KEY_ID`
-   - `R2_SECRET_ACCESS_KEY`
-   - `RESOURCE_STORAGE_LIMIT_MB`
-   - `TURSO_STORAGE_LIMIT_GB`
-4. Deploy.
-5. After deployment, run `npm run db:push` with the same production Turso variables if the database schema has not been applied yet.
-
-## Production Storage
-
-- Turso stores users, links, metadata, and resource records.
-- Cloudflare R2 stores the actual uploaded files and cover images.
-- The app enforces a configurable upload quota through `RESOURCE_STORAGE_LIMIT_MB`.
-
-## Verification
-
-The project passes:
-
-```bash
-npm run lint
-npm run build
+```powershell
+Copy-Item .env.example .env.local
 ```
+
+Completa las variables con las credenciales del proyecto. Usa un secreto aleatorio de al menos 32 caracteres para `JWT_SECRET` y una lista de correos de administradores separada por comas en `ADMIN_EMAILS`.
+
+- Turso almacena usuarios, metadatos de recursos y enlaces sociales.
+- Cloudflare R2 almacena archivos y portadas.
+- `RESOURCE_STORAGE_LIMIT_MB` y `TURSO_STORAGE_LIMIT_GB` establecen los límites mostrados en el panel.
+
+En una base de datos nueva, ejecuta `npm run db:push`. La carpeta `drizzle` conserva las migraciones existentes. No es necesario modificar el esquema para aplicar este rediseño a una instalación existente.
+
+## Producción
+
+```powershell
+npx tsc --noEmit
+npm run build
+npm start
+```
+
+En Vercel, conserva las variables de entorno de la instalación actual. Los endpoints de autenticación, el almacenamiento y los identificadores de los recursos se mantienen.
+
+## Interfaz
+
+- Diseño adaptable desde pantallas de 320 px hasta monitores amplios.
+- Navegación accesible con teclado y menú móvil con cierre mediante Escape.
+- Imágenes con dimensiones reservadas y carga diferida; portada prioritaria sin vídeo automático.
+- Búsqueda que admite texto sin tildes, filtros por formato, ordenación y carga de 24 tarjetas por bloque.
+- Animaciones breves que respetan la preferencia de movimiento reducido.
+- Mensajes de error, estados vacíos y páginas 404.
+
+El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o superior, o Safari 16.4 o superior. El diseño adaptable no sustituye la validación en dispositivos físicos.
+
+## Estructura
+
+- `app`: páginas y endpoints existentes.
+- `components`: navegación, biblioteca pública, formularios y panel.
+- `lib/public-content.ts`: lectura de recursos publicados y redes oficiales.
+- `app/globals.css`: estilos de la interfaz y reglas de adaptación.
+- `db` y `drizzle`: esquema y migraciones de la base de datos.

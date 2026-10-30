@@ -8,6 +8,19 @@ const normalizePlatform = (platform: string) => platform.trim().toLowerCase();
 export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
   const key = normalizePlatform(platform);
 
+  if (key === "twitch") {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M4 2 2 6v14h5v3l4-3h4l7-7V2H4Zm16 10-4 4h-5l-3 3v-3H5V4h15v8ZM10 7h2v5h-2V7Zm5 0h2v5h-2V7Z" />
+      </svg>
+    );
+  }
+
   if (key === "discord") {
     return (
       <svg
@@ -31,7 +44,15 @@ export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" strokeWidth="2" />
+        <rect
+          x="3.5"
+          y="3.5"
+          width="17"
+          height="17"
+          rx="5"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
         <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
         <circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" />
       </svg>
@@ -155,7 +176,10 @@ export function SocialLinkIcon({ platform, className }: SocialLinkIconProps) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path d="M5 4h4v6l4-6h6l-6 7.5L19 20h-6l-4-5.8V20H5V4Z" fill="currentColor" />
+        <path
+          d="M5 4h4v6l4-6h6l-6 7.5L19 20h-6l-4-5.8V20H5V4Z"
+          fill="currentColor"
+        />
       </svg>
     );
   }

@@ -71,7 +71,7 @@ export default async function ResourceDetailPage({ params }: ResourcePageProps) 
     ? `/api/resources/${resource.id}/cover`
     : imageExtensions.has(getFileExtension(resource.filename))
       ? `/api/resources/${resource.id}`
-      : "/rem3.jpg";
+      : "/minecraft-landscape.webp";
 
   return (
     <PublicPageShell

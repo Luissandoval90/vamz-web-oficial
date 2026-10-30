@@ -21,6 +21,7 @@ export function PublicSidebar({ active, canPublish = false }: PublicSidebarProps
 
   return (
     <FloatingRail
+      showInlineLabels
       title="Secciones"
       items={items.map((item) => ({
         ...item,
