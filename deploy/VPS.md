@@ -2,7 +2,9 @@
 
 El despliegue utiliza el mismo repositorio y la dirección provisional `https://vps-e9431466.vps.ovh.net`. La administración se encuentra en `/dashboard`; la gestión de instaladores está en `/dashboard?view=minecraft` y la biblioteca pública de versiones en `/minecraft`.
 
-Los usuarios necesitan registrarse antes de subir recursos y disponen de 180 MB por cuenta, contando archivos y portadas. El límite se aplica tanto al confirmar el recurso como al escribir archivos locales, incluidas las subidas simultáneas. Cada usuario gestiona sus propios recursos; el administrador también puede gestionar el catálogo completo, las versiones de Minecraft y las redes sociales. El registro público no permite reclamar un correo reservado para administración: se conservan las cuentas existentes durante la migración.
+Los usuarios normales solo pueden explorar y descargar recursos publicados. No acceden al panel ni pueden subir, editar, publicar o borrar archivos, aunque conocieran las direcciones de las API. La gestión de recursos, versiones de Minecraft y redes sociales es exclusiva del administrador. Los archivos existentes se conservan. El registro público no permite reclamar un correo reservado para administración.
+
+El inicio de sesión dirige al administrador a `/dashboard` y al resto a `/recursos`. Las sesiones se contrastan con la cuenta actual de la base de datos. Los intentos de acceso y registro tienen límites persistentes en SQLite; Caddy sobrescribe `X-Real-IP` y el puerto de la aplicación no se expone públicamente. Los cambios de estado bloquean orígenes ajenos, los cuerpos JSON se limitan a 16 KB y las redes solo aceptan HTTPS sin credenciales. Las páginas utilizan una política CSP con un nonce distinto en cada respuesta para los scripts, junto con protección frente a marcos, MIME incorrecto y permisos innecesarios del navegador. Estas medidas reducen riesgos; requieren mantenimiento y no garantizan invulnerabilidad.
 
 La web se ejecuta con Next.js, SQLite local y archivos en disco. Caddy recibe las conexiones y gestiona HTTPS. No se necesitan Turso ni R2 después de verificar la migración. La configuración de Vercel sigue funcionando con `STORAGE_DRIVER=r2` o sin esa variable.
 
@@ -13,6 +15,8 @@ Pensado para Linux con Docker Engine y el complemento Docker Compose. La configu
 Necesitas la IP pública, acceso SSH y un dominio propio. Crea un registro DNS `A` hacia la IP; añade `AAAA` únicamente si la IPv6 funciona. El subdominio `vamz-web-oficial.vercel.app` pertenece a Vercel y no puede apuntarse directamente a esta VPS. Para una comprobación provisional por IP puedes usar `VAMZ_DOMAIN=http://IP`, pero el acceso de usuarios requiere el dominio con HTTPS porque las cookies de producción son seguras.
 
 Deja accesibles los puertos 80 y 443 para la web. La aplicación y la base de datos no publican sus propios puertos.
+
+En esta VPS dedicada, `sudo sh deploy/harden-host.sh` instala Fail2ban desde los repositorios de Ubuntu y activa UFW, permitiendo SSH en el puerto 22 y web en 80/443 (IPv4 e IPv6). Conserva el acceso SSH por contraseña y por clave; bloquea temporalmente los intentos SSH repetidos. Si alojas otros servicios o cambias el puerto SSH, adapta las reglas antes de ejecutarlo. Los puertos publicados por Docker pueden saltarse UFW: `compose.yaml` solo debe publicar Caddy, nunca la base de datos ni el puerto 3000.
 
 ## Copiar los datos existentes
 

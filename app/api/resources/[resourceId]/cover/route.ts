@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const canAccessPrivateResource =
-    user && (user.id === resource.userId || isAdminEmail(user.email));
+    user && isAdminEmail(user.email);
 
   if (!resource.isPublished && !canAccessPrivateResource) {
     return NextResponse.json({ error: "Cover not found." }, { status: 404 });

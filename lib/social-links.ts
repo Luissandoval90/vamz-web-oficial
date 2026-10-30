@@ -142,3 +142,27 @@ export const getSocialLinkHostname = (url: string) => {
     return url;
   }
 };
+
+export const isSafeSocialUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch { return false; }
+};
+
+export const getSocialLinkHandle = (value: string) => {
+  try {
+    const url = new URL(value);
+    const path = url.pathname.replace(/\/$/, "");
+    return path && path !== "/" ? `${url.hostname.replace(/^www\./, "")}${path}` : url.hostname.replace(/^www\./, "");
+  } catch { return ""; }
+};
+
+export const getSocialLinkDescription = (platform: string) => ({
+  discord: "Habla con la comunidad y entérate de las novedades.",
+  youtube: "Videos, tutoriales y nuevas ideas para tu mundo.",
+  twitch: "Directos y partidas para compartir el momento.",
+  kick: "Acompáñame en directo.",
+  instagram: "Un vistazo a lo que estoy creando.",
+  tiktok: "Clips, ideas y descubrimientos en pocos segundos.",
+}[platform.toLowerCase()] ?? "Sigue las novedades de VAMZ en este canal.");

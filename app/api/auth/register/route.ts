@@ -1,3 +1,6 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
+import { limitAuthentication } from "@/lib/auth-rate-limit";
+import { readRequestJson } from "@/lib/request-json";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -11,7 +14,11 @@ import { isAdminEmail } from "@/lib/admin";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
+  const limited = await limitAuthentication(request, "register");
+  if (limited) return limited;
+  const body = await readRequestJson(request);
   const parsed = registerSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -56,6 +63,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json(
     {
+      redirectTo: "/recursos",
       user: {
         id: user.id,
         email: user.email,

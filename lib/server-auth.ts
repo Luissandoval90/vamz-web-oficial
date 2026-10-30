@@ -3,10 +3,12 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { cache } from "react";
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import { resolveSessionUser } from "@/lib/session-user";
 import { isAdminEmail } from "@/lib/admin";
 
-export const getCurrentUser = async () => {
+export const getCurrentUser = cache(async () => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
@@ -15,11 +17,11 @@ export const getCurrentUser = async () => {
   }
 
   try {
-    return await verifySessionToken(token);
+    return await resolveSessionUser(token);
   } catch {
     return null;
   }
-};
+});
 
 export const requireUser = async () => {
   const user = await getCurrentUser();
@@ -35,7 +37,7 @@ export const requireAdminUser = async () => {
   const user = await requireUser();
 
   if (!isAdminEmail(user.email)) {
-    redirect("/unauthorized");
+    redirect("/recursos");
   }
 
   return user;

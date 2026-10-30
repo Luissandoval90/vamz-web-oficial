@@ -181,6 +181,7 @@ export function DashboardShell({
                 label: item.label,
                 icon: item.icon,
                 href: item.href,
+                onClick: () => setSidebarOpen(false),
                 active: item.id === view,
               }))}
             />

@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { SocialLinkIcon } from "@/components/social-link-icon";
 
 import {
-  getSocialLinkBadge,
   getSocialLinkDisplayName,
   getSocialLinkHostname,
   SOCIAL_LINK_PLATFORM_OPTIONS,
@@ -61,53 +61,63 @@ function SocialLinkItem({ link }: { link: SocialLinkRecord }) {
     setError(null);
     setFeedback(null);
     setPendingAction("save");
-
-    const response = await fetch(`/api/social-links/${link.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
-
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-
-    if (!response.ok) {
-      setError(result?.error ?? "No se pudo actualizar el link.");
+    try {
+      const response = await fetch(`/api/social-links/${link.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+  
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+  
+      if (!response.ok) {
+        setError(result?.error ?? "No se pudo actualizar el enlace.");
+        setPendingAction(null);
+        return;
+      }
+  
+      setFeedback("Enlace actualizado.");
       setPendingAction(null);
-      return;
+      setIsEditing(false);
+      refresh();
+    } catch {
+      setError("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setPendingAction(null);
     }
-
-    setFeedback("Link actualizado.");
-    setPendingAction(null);
-    setIsEditing(false);
-    refresh();
   };
 
   const handleDelete = async () => {
     setError(null);
     setFeedback(null);
     setPendingAction("delete");
-
-    const response = await fetch(`/api/social-links/${link.id}`, {
-      method: "DELETE",
-    });
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-
-    if (!response.ok) {
-      setError(result?.error ?? "No se pudo eliminar el link.");
+    try {
+      const response = await fetch(`/api/social-links/${link.id}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+  
+      if (!response.ok) {
+        setError(result?.error ?? "No se pudo eliminar el enlace.");
+        setPendingAction(null);
+        return;
+      }
+  
       setPendingAction(null);
-      return;
+      refresh();
+    } catch {
+      setError("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setPendingAction(null);
     }
-
-    setPendingAction(null);
-    refresh();
   };
 
   return (
     <article className={`social-link-card ${isEditing ? "is-editing" : ""}`}>
       <div className="social-link-card-head">
-        <span className="social-link-badge">{getSocialLinkBadge(link.platform, link.icon)}</span>
+        <span className="social-link-badge"><SocialLinkIcon platform={link.platform} className="ui-icon" /></span>
         <div className="social-link-copy">
           <p className="social-link-name">{getSocialLinkDisplayName(link.platform)}</p>
           <p className="social-link-url">{getSocialLinkHostname(link.url)}</p>
@@ -117,7 +127,7 @@ function SocialLinkItem({ link }: { link: SocialLinkRecord }) {
             className="action-button is-light"
             href={link.url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             Abrir
           </a>
@@ -140,7 +150,7 @@ function SocialLinkItem({ link }: { link: SocialLinkRecord }) {
           <button
             className="action-button is-dark"
             type="button"
-            disabled={pendingAction === "delete"}
+            disabled={pendingAction !== null}
             onClick={handleDelete}
           >
             {pendingAction === "delete" ? "Eliminando..." : "Eliminar"}
@@ -148,8 +158,8 @@ function SocialLinkItem({ link }: { link: SocialLinkRecord }) {
         </div>
       </div>
 
-      {feedback ? <p className="status-text is-ok">{feedback}</p> : null}
-      {error ? <p className="status-text is-error">{error}</p> : null}
+      {feedback ? <p role="status" className="status-text is-ok">{feedback}</p> : null}
+      {error ? <p role="alert" className="status-text is-error">{error}</p> : null}
 
       {isEditing ? (
         <form className="social-link-form-grid" onSubmit={handleSave}>
@@ -180,19 +190,9 @@ function SocialLinkItem({ link }: { link: SocialLinkRecord }) {
               value={form.url}
               onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))}
               placeholder="https://..."
+              pattern="https://.*"
+              maxLength={2048}
               required
-            />
-          </label>
-
-          <label className="field" htmlFor={`social-icon-${link.id}`}>
-            <span className="field-label">Icono corto</span>
-            <input
-              id={`social-icon-${link.id}`}
-              type="text"
-              value={form.icon}
-              onChange={(event) => setForm((current) => ({ ...current, icon: event.target.value }))}
-              placeholder="TT o emoji"
-              maxLength={8}
             />
           </label>
 
@@ -217,42 +217,50 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
 
   const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
+    setSaving(true);
     setError(null);
     setSuccess(null);
-
-    const response = await fetch("/api/social-links", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
-
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-
-    if (!response.ok) {
-      setError(result?.error ?? "No se pudo crear el link.");
-      return;
+    try {
+      const response = await fetch("/api/social-links", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+  
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+  
+      if (!response.ok) {
+        setError(result?.error ?? "No se pudo crear el enlace.");
+        return;
+      }
+  
+      setForm(emptyForm);
+      setSuccess("Enlace publicado.");
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setError("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setSaving(false);
     }
-
-    setForm(emptyForm);
-    setSuccess("Link creado.");
-    startTransition(() => {
-      router.refresh();
-    });
   };
 
   return (
     <div className="dashboard-primary-grid social-links-layout">
       <form className="panel-card social-link-editor-card" onSubmit={handleCreate}>
         <div className="section-heading">
-          <p className="section-kicker">Links</p>
+          <p className="section-kicker">Redes oficiales</p>
           <h2 className="section-title-sm">Crear red social</h2>
           <p className="body-copy">
-            Agrega aqui los enlaces que quieres mostrar en la pagina principal.
+            Publica tus canales oficiales con enlaces HTTPS. Los iconos se asignan según la plataforma.
           </p>
         </div>
 
@@ -284,19 +292,9 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
               value={form.url}
               onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))}
               placeholder="https://..."
+              pattern="https://.*"
+              maxLength={2048}
               required
-            />
-          </label>
-
-          <label className="field" htmlFor="social-icon-new">
-            <span className="field-label">Icono corto</span>
-            <input
-              id="social-icon-new"
-              type="text"
-              value={form.icon}
-              onChange={(event) => setForm((current) => ({ ...current, icon: event.target.value }))}
-              placeholder="TT o emoji"
-              maxLength={8}
             />
           </label>
         </div>
@@ -304,7 +302,7 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
         <div className="social-platform-presets">
           <span className="field-label">Plataformas sugeridas</span>
           <div className="social-platform-preset-list">
-            {socialPlatformOptions.map((platform) => (
+            {["Discord", "YouTube", "TikTok", "Twitch", "Instagram", "Kick"].map((platform) => (
               <button
                 key={platform}
                 className={`preset-chip ${form.platform === platform ? "is-active" : ""}`}
@@ -323,19 +321,19 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
         </div>
 
         <div className="inline-actions">
-          <button className="action-button is-accent" type="submit" disabled={isPending}>
-            {isPending ? "Guardando..." : "Crear link"}
+          <button className="action-button is-accent" type="submit" disabled={isPending || saving}>
+            {isPending || saving ? "Guardando..." : "Publicar enlace"}
           </button>
         </div>
 
-        {error ? <p className="status-text is-error">{error}</p> : null}
-        {success ? <p className="status-text is-ok">{success}</p> : null}
+        {error ? <p role="alert" className="status-text is-error">{error}</p> : null}
+        {success ? <p role="status" className="status-text is-ok">{success}</p> : null}
       </form>
 
       <article className="panel-card dashboard-panel-card library-panel social-links-library">
         <div className="section-heading">
           <p className="section-kicker">Publicados</p>
-          <h2 className="section-title-sm">Tus links</h2>
+          <h2 className="section-title-sm">Canales publicados</h2>
           <p className="body-copy">
             Edita o elimina los enlaces que ya aparecen publicados en el inicio.
           </p>

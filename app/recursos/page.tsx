@@ -23,26 +23,22 @@ export default async function RecursosPage() {
         </nav>
         <div className="catalog-page-heading">
           <div>
-            <p className="section-kicker">EXPLORA. ENCUENTRA. CREA.</p>
+            <p className="section-kicker">Biblioteca de VAMZ</p>
             <h1 className="page-title">
-              Tu siguiente idea
-              <br />
-              empieza <span className="text-accent">aquí.</span>
+              Encuentra tu próximo recurso.
             </h1>
             <p className="lead">
-              Todos los recursos de VAMZ, sin vueltas.
-              <br />
-              Encuentra lo que buscas y hazlo parte de tu mundo.
+              Busca por nombre, filtra por tipo y descarga lo que necesitas para tu mundo.
             </p>
           </div>
           <div className="catalog-heading-mark" aria-hidden="true">
-            ↙
+            <span>{resources.length}</span>
           </div>
         </div>
         <ResourceCatalog resources={resources} />
         <section className="contribute-banner">
-          <div><h2>Comparte tus creaciones.</h2><p>Crea una cuenta y dispone de 180 MB para tus recursos y portadas.</p></div>
-          <Link className="action-button is-accent" href="/dashboard">Subir un recurso</Link>
+          <div><h2>¿Buscas una versión de Minecraft?</h2><p>Consulta las versiones disponibles por edición y dispositivo.</p></div>
+          <Link className="action-button is-accent" href="/minecraft">Ver versiones</Link>
         </section>
       </main>
     </PublicFrame>

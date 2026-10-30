@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import { resolveSessionUser } from "@/lib/session-user";
 import { isAdminEmail } from "@/lib/admin";
 
 export const getRequestUser = async (request: NextRequest) => {
@@ -11,7 +12,7 @@ export const getRequestUser = async (request: NextRequest) => {
   }
 
   try {
-    return await verifySessionToken(token);
+    return await resolveSessionUser(token);
   } catch {
     return null;
   }

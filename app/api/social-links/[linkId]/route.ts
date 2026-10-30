@@ -1,3 +1,5 @@
+import { rejectCrossOrigin } from "@/lib/request-origin";
+import { readRequestJson } from "@/lib/request-json";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -27,6 +29,8 @@ const parseLinkId = async (context: RouteContext) => {
 };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const admin = await getRequestAdmin(request);
 
   if (!admin) {
@@ -39,7 +43,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Invalid link id." }, { status: 400 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await readRequestJson(request);
   const parsed = socialLinkSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -69,6 +73,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
+  const denied = rejectCrossOrigin(request);
+  if (denied) return denied;
   const admin = await getRequestAdmin(request);
 
   if (!admin) {

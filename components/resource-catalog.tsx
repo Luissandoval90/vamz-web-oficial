@@ -29,6 +29,7 @@ const categories = [
   "Documentos",
   "Otros",
 ];
+const publishedDate = new Intl.DateTimeFormat("es-PE", { day: "numeric", month: "short", timeZone: "UTC" });
 const normalize = (text: string) =>
   text
     .normalize("NFD")
@@ -147,7 +148,7 @@ export function ResourceCatalog({
                   href={`/recurso/${resource.id}`}
                 >
                   <div className="resource-card-media">
-                    <ResourceThumb resource={resource} />
+                    <ResourceThumb resource={resource} optimize />
                     <span className="resource-kind">
                       {getResourceKind(resource.filename)}
                     </span>
@@ -159,11 +160,7 @@ export function ResourceCatalog({
                     <div className="resource-card-meta">
                       <span>{formatBytes(resource.fileSize)}</span>
                       <span>
-                        {new Intl.DateTimeFormat("es-PE", {
-                          day: "numeric",
-                          month: "short",
-                          timeZone: "UTC",
-                        }).format(
+                        {publishedDate.format(
                           new Date(resource.publishedAt ?? resource.createdAt),
                         )}
                       </span>

@@ -11,6 +11,7 @@ const fallback = "/minecraft-landscape.webp";
 export function ResourceThumb({
   resource,
   previewUrl,
+  optimize = false,
 }: {
   resource: {
     id: string;
@@ -19,11 +20,12 @@ export function ResourceThumb({
     coverPath?: string | null;
   };
   previewUrl?: string;
+  optimize?: boolean;
 }) {
   const primary =
     previewUrl ||
     (resource.coverPath
-      ? `/api/resources/${resource.id}/cover`
+      ? `/api/resources/${resource.id}/cover?v=${encodeURIComponent(resource.coverPath.split("/").at(-1) ?? "")}`
       : imageExtensions.has(getFileExtension(resource.filename))
         ? `/api/resources/${resource.id}`
         : fallback);
@@ -43,7 +45,7 @@ export function ResourceThumb({
       width={800}
       height={500}
       sizes="(max-width: 420px) 100vw, (max-width: 700px) 50vw, 33vw"
-      unoptimized={src.startsWith("/api/")}
+      unoptimized={src.startsWith("/api/") && (!optimize || getFileExtension(resource.coverPath || resource.filename) === "svg")}
       onError={() => setFailedUrls((current) => [...current, src])}
     />
   );

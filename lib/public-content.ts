@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { resources, socialLinks, users, minecraftVersions } from "@/db/schema";
 import { getDisplayUsername } from "@/lib/usernames";
 import { isDatabaseConfigured } from "@/lib/env";
+import { isSafeSocialUrl } from "@/lib/social-links";
 
 export const getPublicResources = cache(async (limit?: number) => {
   if (!isDatabaseConfigured()) return [];
@@ -53,8 +54,9 @@ export const getPublicSocialLinks = cache(async () => {
       { id: 4, platform: "Instagram", url: "https://instagram.com/vaaaamz/" },
       { id: 5, platform: "TikTok", url: "https://tiktok.com/@vaaaamz" },
     ];
-  return getDb()
+  const links = await getDb()
     .select()
     .from(socialLinks)
     .orderBy(desc(socialLinks.updatedAt));
+  return links.filter(link => isSafeSocialUrl(link.url));
 });
