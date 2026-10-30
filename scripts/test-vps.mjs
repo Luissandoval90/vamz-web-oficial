@@ -62,6 +62,7 @@ try {
   await post('/api/resources/upload/prepare', null, {}, 401);
   await post('/api/auth/register', null, { email: 'admin@example.test', username: 'Vamz Test', password }, 409);
   const admin = (await post('/api/auth/login', null, { email: 'admin@example.test', password })).cookie;
+  assert.equal((await request('/api/auth/login', { method: 'POST', json: { email: 'admin@example.test', password }, headers: { Origin: base } })).status, 200);
   const otherAccount = await post('/api/auth/register', null, { email: 'other@example.test', username: 'Other Test', password }, 201);
   const other = otherAccount.cookie;
   assert.equal(otherAccount.result.redirectTo, '/recursos');
