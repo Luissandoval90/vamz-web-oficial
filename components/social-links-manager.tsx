@@ -302,7 +302,7 @@ export function SocialLinksManager({ links }: SocialLinksManagerProps) {
         <div className="social-platform-presets">
           <span className="field-label">Plataformas sugeridas</span>
           <div className="social-platform-preset-list">
-            {socialPlatformOptions.map((platform) => (
+            {["Discord", "YouTube", "TikTok", "Twitch", "Instagram", "Kick"].map((platform) => (
               <button
                 key={platform}
                 className={`preset-chip ${form.platform === platform ? "is-active" : ""}`}
