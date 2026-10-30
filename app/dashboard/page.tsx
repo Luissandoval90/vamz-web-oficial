@@ -3,13 +3,13 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { getDb } from "@/db";
 import { resources, socialLinks, users, minecraftVersions } from "@/db/schema";
 import { buildStorageSummary, resolveResourcesStorage } from "@/lib/resource-storage";
-import { requireUser } from "@/lib/server-auth";
+import { requireAdminUser } from "@/lib/server-auth";
 import { getDisplayUsername } from "@/lib/usernames";
 import { getLocalUsedBytes, getLocalUserUsedBytes, isLocalStorage } from "@/lib/uploads";
 import { getUserStorageQuotaBytes, isAdminEmail } from "@/lib/admin";
 
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<{ view?: string }> }) {
-  const user = await requireUser();
+  const user = await requireAdminUser();
   const admin = isAdminEmail(user.email);
   const db = getDb();
   const params = await searchParams;

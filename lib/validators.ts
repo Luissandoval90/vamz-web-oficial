@@ -5,7 +5,8 @@ export const credentialsSchema = z.object({
   password: z
     .string()
     .min(8, "Password must be at least 8 characters.")
-    .max(72, "Password must be 72 characters or fewer."),
+    .max(72, "La contraseña debe tener 72 caracteres o menos.")
+    .refine(value => new TextEncoder().encode(value).length <= 72, "La contraseña supera el límite de 72 bytes."),
 });
 
 export const registerSchema = credentialsSchema.extend({
@@ -60,7 +61,12 @@ export const socialLinkSchema = z.object({
     .min(2, "El nombre de la red debe tener al menos 2 caracteres.")
     .max(40, "El nombre de la red debe tener 40 caracteres o menos.")
     .transform((value) => value.replace(/\s+/g, " ").trim()),
-  url: z.string().trim().url("Ingresa un enlace valido."),
+  url: z.string().trim().max(2048).url("Ingresa un enlace válido.").refine((value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && !url.username && !url.password;
+    } catch { return false; }
+  }, "Usa un enlace HTTPS sin credenciales."),
   icon: z
     .string()
     .trim()

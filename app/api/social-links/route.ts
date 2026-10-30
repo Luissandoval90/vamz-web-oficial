@@ -1,3 +1,4 @@
+import { readRequestJson } from "@/lib/request-json";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await readRequestJson(request);
   const parsed = socialLinkSchema.safeParse(body);
 
   if (!parsed.success) {

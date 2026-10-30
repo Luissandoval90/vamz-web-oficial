@@ -17,6 +17,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const user = await getRequestUser(request);
+  if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Solo el administrador puede gestionar el contenido." }, { status: 403 });
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

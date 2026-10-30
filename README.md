@@ -1,6 +1,6 @@
 # VAMZ Studio
 
-Web de recursos y comunidad construida con Next.js, React y TypeScript. La interfaz utiliza una navegación común, una biblioteca con búsqueda, filtros por tipo y ordenación, y un panel privado para gestionar archivos y redes sociales.
+Web de recursos y comunidad construida con Next.js, React y TypeScript. Los visitantes y usuarios exploran los recursos publicados; el panel y las operaciones de gestión están reservados al administrador. Incluye biblioteca con búsqueda y filtros, versiones de Minecraft y redes oficiales.
 
 ## Desarrollo
 
@@ -25,7 +25,7 @@ Completa las variables con las credenciales del proyecto. Usa un secreto aleator
 - Cloudflare R2 almacena archivos y portadas.
 - `RESOURCE_STORAGE_LIMIT_MB` y `TURSO_STORAGE_LIMIT_GB` establecen los límites mostrados en el panel.
 
-En una base de datos nueva, ejecuta `npm run db:push`. La carpeta `drizzle` conserva las migraciones existentes. No es necesario modificar el esquema para aplicar este rediseño a una instalación existente.
+En la VPS, el contenedor ejecuta `npm run db:init` antes de iniciar la aplicación; prepara SQLite y la tabla de límites de autenticación sin borrar datos. La carpeta `drizzle` conserva las migraciones anteriores.
 
 ## Producción
 

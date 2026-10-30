@@ -11,6 +11,7 @@ export const runtime = "nodejs";
 export async function PUT(request: NextRequest) {
   if (!isLocalStorage()) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const user = await getRequestUser(request);
+  if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Solo el administrador puede gestionar el contenido." }, { status: 403 });
   if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const token = request.nextUrl.searchParams.get("token");
   if (!token || !request.body) return NextResponse.json({ error: "Subida no válida." }, { status: 400 });

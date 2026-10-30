@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
+import "./world.css";
+import { connection } from "next/server";
 
 const manrope = Manrope({
   variable: "--font-body",
@@ -28,9 +30,10 @@ export const viewport: Viewport = {
   themeColor: "#0b0f16",
   colorScheme: "dark",
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  await connection();
   return (
     <html lang="es" data-scroll-behavior="smooth">
       <body className={manrope.variable}>

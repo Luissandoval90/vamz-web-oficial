@@ -33,13 +33,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       );
       const result = (await response.json().catch(() => null)) as {
         error?: string;
+        redirectTo?: string;
       } | null;
       if (!response.ok)
         throw new Error(
           result?.error ??
             "No pudimos procesar tu solicitud. Inténtalo de nuevo.",
         );
-      router.push("/dashboard");
+      router.push(result?.redirectTo === "/dashboard" ? "/dashboard" : "/recursos");
       router.refresh();
     } catch (failure) {
       setError(
@@ -62,7 +63,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         <p>
           {login
             ? "Inicia sesión con tu cuenta de VAMZ."
-            : "Regístrate para compartir recursos. Tu cuenta incluye 180 MB para archivos y portadas."}
+            : "Crea tu cuenta para explorar los recursos de VAMZ. Las publicaciones están a cargo del administrador."}
         </p>
       </div>
       <form className="form-grid" onSubmit={handleSubmit} aria-busy={pending}>

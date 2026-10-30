@@ -1,3 +1,4 @@
+import { readRequestJson } from "@/lib/request-json";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const canAccessPrivateResource =
-    user && (user.id === resource.userId || isAdminEmail(user.email));
+    user && isAdminEmail(user.email);
 
   if (!resource.isPublished && !canAccessPrivateResource) {
     return NextResponse.json({ error: "Resource not found." }, { status: 404 });
@@ -91,12 +92,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const user = await getRequestUser(request);
+  if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => null)) as
+  const body = (await readRequestJson(request)) as
     | {
         isPublished?: unknown;
       }
@@ -130,6 +132,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const user = await getRequestUser(request);
+  if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

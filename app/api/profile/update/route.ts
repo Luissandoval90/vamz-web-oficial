@@ -1,3 +1,5 @@
+import { readRequestJson } from "@/lib/request-json";
+import { isAdminEmail } from "@/lib/admin";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -12,12 +14,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const user = await getRequestUser(request);
+  if (user && !isAdminEmail(user.email)) return NextResponse.json({ error: "Solo el administrador puede gestionar el contenido." }, { status: 403 });
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null);
+  const body = await readRequestJson(request);
   const parsed = profileSchema.safeParse(body);
 
   if (!parsed.success) {

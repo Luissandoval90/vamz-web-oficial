@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile, truncate } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -11,7 +11,7 @@ import bcrypt from 'bcrypt';
 
 const root = path.resolve('.local', `vps-test-${randomUUID()}`);
 await mkdir(root, { recursive: true });
-const env = { ...process.env, NODE_ENV: 'production', STORAGE_DRIVER: 'local', DATA_DIR: root,
+const env = { ...process.env, VAMZ_DOMAIN: "", NODE_ENV: 'production', STORAGE_DRIVER: 'local', DATA_DIR: root,
   DATABASE_URL: pathToFileURL(path.join(root, 'db/vamz.sqlite')).href,
   JWT_SECRET: randomBytes(48).toString('hex'), ADMIN_EMAILS: 'admin@example.test',
   RESOURCE_STORAGE_LIMIT_MB: '512', MAX_UPLOAD_MB: '256', MIN_FREE_SPACE_MB: '0', NEXT_TELEMETRY_DISABLED: '1' };
@@ -42,7 +42,7 @@ const start = async () => {
   throw new Error(`El servidor no responde: ${logs}`);
 };
 const request = async (url, { cookie, json, ...options } = {}) => fetch(new URL(url, base), {
-  ...options, headers: { ...(json ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}), ...options.headers },
+  redirect: 'manual', ...options, headers: { ...(json ? { 'Content-Type': 'application/json' } : {}), ...(cookie ? { Cookie: cookie } : {}), ...options.headers },
   ...(json ? { body: JSON.stringify(json) } : {}), signal: AbortSignal.timeout(30000),
 });
 const post = async (url, cookie, json, expected = 200) => {
@@ -64,6 +64,9 @@ try {
   const admin = (await post('/api/auth/login', null, { email: 'admin@example.test', password })).cookie;
   const otherAccount = await post('/api/auth/register', null, { email: 'other@example.test', username: 'Other Test', password }, 201);
   const other = otherAccount.cookie;
+  assert.equal(otherAccount.result.redirectTo, '/recursos');
+  const normalLogin = await post('/api/auth/login', null, { email: 'other@example.test', password });
+  assert.equal(normalLogin.result.redirectTo, '/recursos');
   const file = randomBytes(256 * 1024);
   const cover = await readFile('public/vamz-skin.png');
   const prepare = async (publish, cookie = admin) => (await post('/api/resources/upload/prepare', cookie, {
@@ -71,7 +74,7 @@ try {
     cover: { name: 'cover.png', size: cover.length, type: 'image/png' }, title: 'Prueba VPS', publish,
   })).result;
   await post('/api/resources/upload/prepare', admin, { file: { name: 'large.zip', size: 257 * 1024 * 1024 } }, 413);
-  await post('/api/resources/upload/prepare', other, { file: { name: 'large.zip', size: 181 * 1024 * 1024 } }, 507);
+  await post('/api/resources/upload/prepare', other, { file: { name: 'large.zip', size: 181 * 1024 * 1024 } }, 403);
   const minecraft = { version: '1.21.100', edition: 'Bedrock', platform: 'Android' };
   await post('/api/resources/upload/prepare', other, { file: { name: 'sample.apk', size: 10 }, publish: true, minecraft }, 403);
   const prepared = await prepare(true);
@@ -82,9 +85,9 @@ try {
   }
   assert.equal((await request(prepared.file.uploadUrl, { method: 'PUT', cookie: admin, body: file })).status, 409);
   const metadata = { fileName: 'sample.mcpack', fileKey: prepared.file.key, coverKey: prepared.cover.key, publish: true, title: 'Prueba VPS' };
-  await post('/api/resources/upload/complete', other, metadata, 400);
+  await post('/api/resources/upload/complete', other, metadata, 403);
   const resource = (await post('/api/resources/upload/complete', admin, metadata, 201)).result.resource;
-  await post('/api/resources/upload/complete', other, { ...metadata, minecraft }, 400);
+  await post('/api/resources/upload/complete', other, { ...metadata, minecraft }, 403);
   assert.equal((await post('/api/resources/upload/complete', admin, metadata, 201)).result.resource.id, resource.id);
   const url = `/api/resources/${resource.id}?download=1`;
   const download = await request(url);
@@ -96,25 +99,57 @@ try {
   assert.deepEqual(Buffer.from(await partial.arrayBuffer()), file.subarray(10, 30));
   assert.equal((await request(url, { headers: { Range: 'bytes=9999999-' } })).status, 416);
   assert.deepEqual(Buffer.from(await (await request(`/api/resources/${resource.id}/cover`)).arrayBuffer()), cover);
+  const optimizedCover = await request(`/_next/image?url=${encodeURIComponent('/api/resources/'+resource.id+'/cover')}&w=640&q=75`);
+  assert.equal(optimizedCover.status, 200);
+  assert.ok(optimizedCover.headers.get('content-type').startsWith('image/'));
   const privatePrepared = await prepare(false);
   assert.equal((await request(privatePrepared.file.uploadUrl, { method: 'PUT', cookie: admin, body: file })).status, 201);
   const privateResource = (await post('/api/resources/upload/complete', admin, { fileName: 'private.mcpack', fileKey: privatePrepared.file.key }, 201)).result.resource;
   assert.equal((await request(`/api/resources/${privateResource.id}`)).status, 404);
   assert.equal((await request(`/api/resources/${privateResource.id}`, { cookie: other })).status, 404);
+  assert.equal((await request(`/_next/image?url=${encodeURIComponent('/api/resources/'+privateResource.id)}&w=640&q=75`)).status, 404);
   const own = await request(`/api/resources/${privateResource.id}`, { cookie: admin });
   assert.equal(own.status, 200);
   await own.arrayBuffer();
-  const community = (await post('/api/resources/upload/prepare', other, { file: { name: 'community.mcpack', size: file.length }, publish: true })).result;
-  assert.equal((await request(community.file.uploadUrl, { method: 'PUT', cookie: other, body: file })).status, 201);
-  await post('/api/resources/upload/complete', other, { fileName: 'community.mcpack', fileKey: community.file.key, publish: true, minecraft }, 403);
-  const communityResource = (await post('/api/resources/upload/complete', other, { fileName: 'community.mcpack', fileKey: community.file.key, publish: true }, 201)).result.resource;
-  const communityDownload = await request(`/api/resources/${communityResource.id}`);
-  assert.equal(communityDownload.status, 200); await communityDownload.arrayBuffer();
-  assert.equal((await request(`/api/resources/${resource.id}`, { method: 'DELETE', cookie: other })).status, 404);
-  assert.equal((await request('/api/social-links', { method: 'POST', cookie: other, json: { platform: 'Test', url: 'https://example.com' } })).status, 403);
-  const userPanel = await (await request('/dashboard', { cookie: other })).text();
-  assert.ok(userPanel.includes('180 MB'));
-  assert.ok(!userPanel.includes('Subir versión de Minecraft'));
+  const largeFile = Buffer.alloc(12 * 1024 * 1024, 17);
+  const largeUpload = (await post('/api/resources/upload/prepare', admin, { file: { name: 'large.mcpack', size: largeFile.length } })).result;
+  assert.equal((await request(largeUpload.file.uploadUrl, { method: 'PUT', cookie: admin, body: largeFile })).status, 201);
+  const largeResource = (await post('/api/resources/upload/complete', admin, { fileName: 'large.mcpack', fileKey: largeUpload.file.key }, 201)).result.resource;
+  assert.equal((await request('/api/resources/'+largeResource.id, { method: 'DELETE', cookie: admin })).status, 200);
+  for (const [url, method] of [
+    ['/api/resources/upload', 'POST'], ['/api/resources/upload/complete', 'POST'],
+    ['/api/resources/list', 'GET'], ['/api/profile/update', 'POST'],
+    ['/api/resources/'+resource.id, 'PATCH'], ['/api/resources/'+resource.id, 'DELETE'],
+    ['/api/resources/'+resource.id+'/details', 'POST'], ['/api/social-links', 'POST'],
+    ['/api/social-links/1', 'PATCH'], ['/api/social-links/1', 'DELETE'],
+  ]) assert.equal((await request(url, { method, cookie: other })).status, 403, url);
+  const deniedPanel = await request('/dashboard?view=minecraft', { cookie: other });
+  assert.equal(deniedPanel.status, 307);
+  assert.equal(new URL(deniedPanel.headers.get('location'), base).pathname, '/recursos');
+  const normalPage = await (await request('/recursos', { cookie: other })).text();
+  assert.ok(!normalPage.includes('Administrar') && !normalPage.includes('180 MB') && !normalPage.includes('Subir un recurso'));
+  for (const [url, method, headers] of [
+    ['/api/auth/login', 'POST', { Origin: 'https://attacker.test' }],
+    ['/api/auth/logout', 'POST', { 'Sec-Fetch-Site': 'cross-site' }],
+    ['/api/resources/'+resource.id, 'DELETE', { Origin: 'null' }],
+  ]) assert.equal((await request(url, { method, headers, cookie: admin })).status, 403, url);
+  await post('/api/social-links', admin, { platform: 'Test', url: 'javascript:alert(1)' }, 400);
+  await post('/api/social-links', admin, { platform: 'Test', url: 'https://user:password@example.com' }, 400);
+  await post('/api/social-links', admin, { platform: 'Test', url: 'http://example.com' }, 400);
+  const social = (await post('/api/social-links', admin, { platform: 'YouTube', url: 'https://youtube.com/@vamz-test' }, 201)).result.link;
+  assert.equal((await request('/api/social-links/'+social.id, { method: 'DELETE', cookie: admin })).status, 200);
+  const home = await request('/');
+  const csp = home.headers.get('content-security-policy');
+  assert.ok(csp.includes("'strict-dynamic'") && csp.includes("frame-ancestors 'none'"));
+  const nonce = csp.match(/'nonce-([^']+)'/)[1];
+  const html = await home.text();
+  assert.ok(!html.includes('data-dgst='), 'La portada debe renderizarse sin errores en el servidor.');
+  assert.ok(html.includes('nonce="'+nonce+'"'));
+  assert.notEqual((await request('/')).headers.get('content-security-policy'), csp);
+  assert.equal(home.headers.get('x-frame-options'), 'DENY');
+  assert.equal(home.headers.get('x-powered-by'), null);
+  assert.equal(download.headers.get('content-security-policy'), 'sandbox');
+  await post('/api/auth/login', null, { email: 'no@example.test', password: 'x'.repeat(17000) }, 400);
   const versionPrepared = (await post('/api/resources/upload/prepare', admin, { file: { name: 'minecraft.apk', size: file.length }, publish: true, minecraft })).result;
   assert.equal((await request(versionPrepared.file.uploadUrl, { method: 'PUT', cookie: admin, body: file })).status, 201);
   const versionResource = (await post('/api/resources/upload/complete', admin, { fileName: 'minecraft.apk', fileKey: versionPrepared.file.key, publish: true, minecraft }, 201)).result.resource;
@@ -122,21 +157,28 @@ try {
   assert.ok(catalog.includes('1.21.100') && catalog.includes(versionResource.id));
   const resourcesPage = await (await request('/recursos')).text();
   assert.ok(!resourcesPage.includes(versionResource.id));
-  const quotaFile = path.join(root, 'storage/uploads', otherAccount.result.user.id, 'quota-fixture.bin');
-  await writeFile(quotaFile, ''); await truncate(quotaFile, 180 * 1024 * 1024);
-  await post('/api/resources/upload/prepare', other, { file: { name: 'one-byte.zip', size: 1 } }, 507);
-  assert.equal((await request(`/api/resources/${communityResource.id}`, { method: 'DELETE', cookie: other })).status, 200);
   await stop();
   await start();
   const login = await post('/api/auth/login', null, { email: 'admin@example.test', password });
   assert.ok(login.cookie);
+  assert.equal(login.result.redirectTo, '/dashboard');
   assert.deepEqual(Buffer.from(await (await request(url)).arrayBuffer()), file);
   assert.equal((await request(`/api/resources/${resource.id}`, { method: 'DELETE', cookie: login.cookie })).status, 200);
   assert.equal((await request(url)).status, 404);
   assert.ok((await (await request('/minecraft')).text()).includes(versionResource.id));
   assert.equal((await request(`/api/resources/${versionResource.id}`, { method: 'DELETE', cookie: login.cookie })).status, 200);
   assert.ok(!(await (await request('/minecraft')).text()).includes(versionResource.id));
-  console.log('VPS: registro, permisos por rol, cuota de 180 MB, versiones de Minecraft, subidas, rangos y persistencia verificados.');
+  for (let attempt=0; attempt<12; attempt++) await post('/api/auth/login', null, { email: 'missing@example.test', password }, 401);
+  await post('/api/auth/login', null, { email: 'missing@example.test', password }, 429);
+  await stop(); await start();
+  const blocked = await request('/api/auth/login', { method: 'POST', json: { email: 'missing@example.test', password } });
+  assert.equal(blocked.status, 429);
+  assert.ok(Number(blocked.headers.get('retry-after')) > 0);
+  const revoke = createClient({ url: env.DATABASE_URL });
+  try { await revoke.execute({ sql: 'DELETE FROM users WHERE id = ?', args: [otherAccount.result.user.id] }); }
+  finally { revoke.close(); }
+  assert.equal((await request('/api/profile/update', { method: 'POST', cookie: other })).status, 401);
+  console.log('VPS: usuarios de solo lectura, administración, CSRF, CSP, enlaces HTTPS, límites de acceso persistentes, subidas, rangos y persistencia verificados.');
   if (process.env.VAMZ_TEST_UI === '1') {
     await writeFile('.local/vps-ui.json', JSON.stringify({ env, password, root, base }), { mode: 0o600 });
     console.log('Servidor de pruebas disponible para revisar la interfaz.');
