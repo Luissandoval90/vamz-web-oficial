@@ -7,7 +7,7 @@
 }
 .world-intro { min-width: 0; }
 .world-signature { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-.world-hero h1 { font-size: clamp(52px, 6.2vw, 88px); line-height: 1.01; letter-spacing: -.065em; max-width: 7.5ch; text-wrap: balance; }
+.world-hero h1 { font-size: clamp(52px, 6.2vw, 88px); line-height: 1.01; letter-spacing: -.065em; max-width: 10ch; text-wrap: balance; }
 .world-description { font-size: 15px; color: var(--muted); line-height: 1.85; max-width: 43ch; margin-top: 26px; }
 .world-community-link { display: flex; align-items: center; gap: 13px; margin-top: 38px; font-size: 11px; line-height: 1.8; color: var(--muted); width: fit-content; }
 .world-community-link strong { color: var(--foreground); font-weight: 500; }
