@@ -48,6 +48,12 @@ Vercel redirige al dominio principal. La aplicación, la base de datos y los arc
 - Fichas con vistas, descargas iniciadas y puntuaciones de reseñas aprobadas. Los contadores empiezan al activar esta función y deduplican por navegador y día; no representan personas únicas.
 - Una reseña por cuenta y recurso, moderación de nuevas reseñas y ediciones, y retirada por su autor.
 - Progreso real de subidas, bytes enviados y cancelación antes de confirmar la publicación.
+- Portada panorámica con carrusel de publicaciones reales, navegación por teclado, pausa al interactuar y reproducción que se detiene fuera de pantalla o al solicitar movimiento reducido.
+- Accesos por tipo de archivo, tira horizontal de descubrimientos, plataformas reales de Minecraft, redes oficiales y ayuda desplegable.
+
+`app/studio.css` define la identidad y los componentes de presentación. `app/library.css` conserva los estilos de fichas, reseñas y administración; se retiraron las reglas de la portada anterior.
+
+La prueba de interacción `scripts/test-studio-ui.mjs` se ejecuta con `playwright-cli run-code --filename=scripts/test-studio-ui.mjs` después de abrir una vista previa aislada con varios recursos publicados, incluido el recurso de prueba Spectral. Comprueba carrusel, pausa, enlaces, teclado, movimiento reducido, tira, ayuda, menú móvil y filtros. No se debe ejecutar contra producción con cuentas de prueba o archivos ficticios.
 
 El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o superior, o Safari 16.4 o superior. El diseño adaptable no sustituye la validación en dispositivos físicos.
 
