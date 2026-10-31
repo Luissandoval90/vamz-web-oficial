@@ -32,7 +32,7 @@ const reviewDate = new Intl.DateTimeFormat("es-PE", {
 });
 function RatingStars({ value }: { value: number }) {
   return (
-    <span className="rating-stars" aria-label={`${value} de 5 estrellas`}>
+    <span className="rating-stars" role="img" aria-label={value ? `${value} de 5 estrellas` : "Sin valoraciones"}>
       {[1, 2, 3, 4, 5].map((star) => (
         <span key={star} className={star <= value ? "is-filled" : ""}>
           <UiIcon name="star" />
