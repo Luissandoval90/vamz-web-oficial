@@ -15,11 +15,13 @@ export const metadata: Metadata = {
 export default async function RecursosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string }>;
 }) {
   const resources = await getPublicResources();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.slice(0, 120) : "";
+  const category =
+    typeof params.type === "string" ? params.type.slice(0, 20) : "all";
   return (
     <PublicFrame>
       <main className="page-shell catalog-page" id="contenido">
@@ -42,9 +44,10 @@ export default async function RecursosPage({
           </div>
         </div>
         <ResourceCatalog
-          key={query}
+          key={query + ":" + category}
           resources={resources}
           initialSearch={query}
+          initialCategory={category}
         />
         <section className="contribute-banner">
           <div>

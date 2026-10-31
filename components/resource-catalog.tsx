@@ -48,13 +48,18 @@ export function ResourceCatalog({
   resources,
   compact = false,
   initialSearch = "",
+  initialCategory = "all",
 }: {
   resources: CatalogResource[];
   compact?: boolean;
   initialSearch?: string;
+  initialCategory?: string;
 }) {
   const [search, setSearch] = useState(initialSearch);
-  const [category, setCategory] = useState("Todos");
+  const categoryKeys = ["all", "images", "packs", "documents", "other"];
+  const [category, setCategory] = useState(
+    categories[Math.max(0, categoryKeys.indexOf(initialCategory))],
+  );
   const [sort, setSort] = useState("recent");
   const [visibleCount, setVisibleCount] = useState(24);
   const query = normalize(useDeferredValue(search).trim());

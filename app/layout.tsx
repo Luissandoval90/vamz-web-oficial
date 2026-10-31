@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import "./library.css";
+import "./studio.css";
 import { connection } from "next/server";
 
 const manrope = Manrope({
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   },
 };
 export const viewport: Viewport = {
-  themeColor: "#0b0f16",
+  themeColor: "#090f1a",
   colorScheme: "dark",
 };
 export default async function RootLayout({

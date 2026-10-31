@@ -12,6 +12,8 @@ export function ResourceThumb({
   resource,
   previewUrl,
   optimize = false,
+  priority = false,
+  sizes = "(max-width: 420px) 100vw, (max-width: 700px) 50vw, 33vw",
 }: {
   resource: {
     id: string;
@@ -21,6 +23,8 @@ export function ResourceThumb({
   };
   previewUrl?: string;
   optimize?: boolean;
+  priority?: boolean;
+  sizes?: string;
 }) {
   const primary =
     previewUrl ||
@@ -44,8 +48,13 @@ export function ResourceThumb({
       alt={resource.title?.trim() || resource.filename}
       width={800}
       height={500}
-      sizes="(max-width: 420px) 100vw, (max-width: 700px) 50vw, 33vw"
-      unoptimized={src.startsWith("/api/") && (!optimize || getFileExtension(resource.coverPath || resource.filename) === "svg")}
+      sizes={sizes}
+      priority={priority}
+      unoptimized={
+        src.startsWith("/api/") &&
+        (!optimize ||
+          getFileExtension(resource.coverPath || resource.filename) === "svg")
+      }
       onError={() => setFailedUrls((current) => [...current, src])}
     />
   );
