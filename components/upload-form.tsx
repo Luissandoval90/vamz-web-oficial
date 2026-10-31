@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { formatBytes } from "@/lib/resource-utils";
+import { uploadWithProgress } from "@/lib/browser-upload";
 
 const formatUsagePercent = (value: number) => {
   if (value <= 0) {
@@ -65,6 +66,13 @@ export function UploadForm({
   const [fileName, setFileName] = useState("");
   const [isRefreshing, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState<{
+    loaded: number;
+    total: number;
+    phase: "preparing" | "uploading" | "saving";
+  } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
   const isPending = isUploading || isRefreshing;
   const formattedUsagePercent = storage
     ? formatUsagePercent(storage.usagePercent)
@@ -91,7 +99,9 @@ export function UploadForm({
       return;
     }
     if (file.size > maxUploadBytes) {
-      setError(`El archivo principal supera el máximo de ${formatBytes(maxUploadBytes)}.`);
+      setError(
+        `El archivo principal supera el máximo de ${formatBytes(maxUploadBytes)}.`,
+      );
       return;
     }
     if (cover && cover.size > 16 * 1024 * 1024) {
@@ -100,19 +110,30 @@ export function UploadForm({
     }
 
     if (storage && file.size + (cover?.size ?? 0) > storage.availableBytes) {
-      setError(`No hay espacio suficiente. Te quedan ${formatBytes(storage.availableBytes)} para archivos y portadas.`);
+      setError(
+        `No hay espacio suficiente. Te quedan ${formatBytes(storage.availableBytes)} para archivos y portadas.`,
+      );
       return;
     }
-    const minecraft = minecraftMode ? {
-      version: String(formData.get("version") ?? ""),
-      edition: String(formData.get("edition") ?? "Bedrock"),
-      platform: String(formData.get("platform") ?? "Android"),
-    } : undefined;
+    const minecraft = minecraftMode
+      ? {
+          version: String(formData.get("version") ?? ""),
+          edition: String(formData.get("edition") ?? "Bedrock"),
+          platform: String(formData.get("platform") ?? "Android"),
+        }
+      : undefined;
 
     setIsUploading(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const stagedKeys: string[] = [];
+    let completionStarted = false;
+    const total = file.size + (cover?.size ?? 0);
+    setProgress({ loaded: 0, total, phase: "preparing" });
     try {
       const prepareResponse = await fetch("/api/resources/upload/prepare", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
         },
@@ -158,39 +179,48 @@ export function UploadForm({
         setError(prepareResult?.error ?? "No se pudo preparar la subida.");
         return;
       }
+      stagedKeys.push(prepareResult.file.key);
+      if (prepareResult.cover) stagedKeys.push(prepareResult.cover.key);
 
-      const uploadTargets = [
-        fetch(prepareResult.file.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": prepareResult.file.contentType,
-          },
-          body: file,
-        }),
+      const loaded = [0, 0];
+      let lastUpdate = 0;
+      const update = (index: number, bytes: number) => {
+        loaded[index] = bytes;
+        const sum = loaded[0] + loaded[1];
+        if (performance.now() - lastUpdate > 100 || sum === total) {
+          lastUpdate = performance.now();
+          setProgress({ loaded: sum, total, phase: "uploading" });
+        }
+      };
+      setProgress({ loaded: 0, total, phase: "uploading" });
+      const targets = [
+        uploadWithProgress(
+          prepareResult.file.uploadUrl,
+          file,
+          prepareResult.file.contentType,
+          controller.signal,
+          (bytes) => update(0, bytes),
+        ),
       ];
-
-      if (cover && prepareResult.cover) {
-        uploadTargets.push(
-          fetch(prepareResult.cover.uploadUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Type": prepareResult.cover.contentType,
-            },
-            body: cover,
-          }),
+      if (cover && prepareResult.cover)
+        targets.push(
+          uploadWithProgress(
+            prepareResult.cover.uploadUrl,
+            cover,
+            prepareResult.cover.contentType,
+            controller.signal,
+            (bytes) => update(1, bytes),
+          ),
         );
+      try {
+        await Promise.all(targets);
+      } catch (failure) {
+        controller.abort();
+        await Promise.allSettled(targets);
+        throw failure;
       }
-
-      const uploadResponses = await Promise.all(uploadTargets);
-      const uploadFailed = uploadResponses.some((response) => !response.ok);
-
-      if (uploadFailed) {
-        const failed = uploadResponses.find(response => !response.ok)!;
-        const result = await failed.json().catch(() => null) as { error?: string } | null;
-        setError(result?.error ?? (failed.status === 413 ? "El servidor rechazó el tamaño del archivo. Recarga la página e inténtalo de nuevo." : "No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo."));
-        return;
-      }
-
+      completionStarted = true;
+      setProgress({ loaded: total, total, phase: "saving" });
       const completeResponse = await fetch("/api/resources/upload/complete", {
         method: "POST",
         headers: {
@@ -224,9 +254,24 @@ export function UploadForm({
       startTransition(() => {
         router.refresh();
       });
-    } catch {
-      setError("Ocurrio un problema al subir el archivo.");
+    } catch (failure) {
+      if (!completionStarted && stagedKeys.length)
+        await fetch("/api/resources/upload/discard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keys: stagedKeys }),
+          keepalive: true,
+        }).catch(() => {});
+      setError(
+        failure instanceof DOMException && failure.name === "AbortError"
+          ? "Subida cancelada. Puedes seleccionar otro archivo o volver a intentarlo."
+          : failure instanceof Error
+            ? failure.message
+            : "No se pudo subir el archivo.",
+      );
     } finally {
+      abortRef.current = null;
+      setProgress(null);
       setIsUploading(false);
     }
   };
@@ -247,10 +292,10 @@ export function UploadForm({
 
         <div className="upload-card-badges" aria-hidden="true">
           <span className="upload-card-badge is-accent">
-            Publicacion directa
+            Publicación directa
           </span>
           <span className="upload-card-badge">Visible en la web</span>
-          <span className="upload-card-badge">Gestion interna</span>
+          <span className="upload-card-badge">Gestión interna</span>
         </div>
       </div>
 
@@ -321,18 +366,39 @@ export function UploadForm({
         </section>
       ) : null}
 
-      {minecraftMode ? <fieldset className="minecraft-version-fields" disabled={isPending}>
-        <legend>Datos de la versión</legend>
-        <label className="field"><span className="field-label">Número de versión</span>
-          <input name="version" placeholder="Ej. 1.21.100" required maxLength={40} autoComplete="off" spellCheck={false} />
-        </label>
-        <label className="field"><span className="field-label">Edición</span>
-          <select name="edition" defaultValue="Bedrock"><option>Bedrock</option><option>Java</option></select>
-        </label>
-        <label className="field"><span className="field-label">Plataforma</span>
-          <select name="platform" defaultValue="Android"><option>Android</option><option>Windows</option><option>macOS</option><option>Linux</option><option>Multiplataforma</option></select>
-        </label>
-      </fieldset> : null}
+      {minecraftMode ? (
+        <fieldset className="minecraft-version-fields" disabled={isPending}>
+          <legend>Datos de la versión</legend>
+          <label className="field">
+            <span className="field-label">Número de versión</span>
+            <input
+              name="version"
+              placeholder="Ej. 1.21.100"
+              required
+              maxLength={40}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">Edición</span>
+            <select name="edition" defaultValue="Bedrock">
+              <option>Bedrock</option>
+              <option>Java</option>
+            </select>
+          </label>
+          <label className="field">
+            <span className="field-label">Plataforma</span>
+            <select name="platform" defaultValue="Android">
+              <option>Android</option>
+              <option>Windows</option>
+              <option>macOS</option>
+              <option>Linux</option>
+              <option>Multiplataforma</option>
+            </select>
+          </label>
+        </fieldset>
+      ) : null}
 
       <div className="form-grid upload-meta-grid">
         <label className="field" htmlFor="resource-title">
@@ -343,15 +409,17 @@ export function UploadForm({
             type="text"
             placeholder="Ej. Pack de texturas V2"
             maxLength={120}
+            disabled={isPending}
           />
         </label>
 
         <label className="field" htmlFor="resource-description">
-          <span className="field-label">Descripcion</span>
+          <span className="field-label">Descripción</span>
           <textarea
             id="resource-description"
             name="description"
             rows={5}
+            disabled={isPending}
             placeholder="Describe para que sirve el recurso, que incluye o como se usa."
           />
         </label>
@@ -377,6 +445,7 @@ export function UploadForm({
                 className="file-input"
                 id="resource-cover"
                 type="file"
+                disabled={isPending}
                 name="cover"
                 accept="image/*"
                 onChange={(event) =>
@@ -393,14 +462,17 @@ export function UploadForm({
             <div className="upload-box-head">
               <div className="upload-copy">
                 <strong>Elige el archivo principal del recurso</strong>
-                <p>Hasta {formatBytes(maxUploadBytes)} por archivo. Se guardará en tu biblioteca.</p>
+                <p>
+                  Hasta {formatBytes(maxUploadBytes)} por archivo. Se guardará
+                  en tu biblioteca.
+                </p>
               </div>
               <span className="upload-box-chip is-strong">Principal</span>
             </div>
 
             <div className="upload-box-foot">
               <span className="upload-file-state">
-                {fileName || "Ningun archivo seleccionado"}
+                {fileName || "Ningún archivo seleccionado"}
               </span>
               <input
                 className="file-input file-input-lg"
@@ -417,6 +489,44 @@ export function UploadForm({
         </label>
       </div>
 
+      {progress ? (
+        <section
+          className="upload-progress-panel"
+          aria-label="Progreso de la subida"
+        >
+          <div className="upload-progress-header">
+            <strong>
+              {progress.phase === "preparing"
+                ? "Preparando los archivos…"
+                : progress.phase === "saving"
+                  ? "Guardando la publicación…"
+                  : "Subiendo archivos"}
+            </strong>
+            <span>{Math.floor((progress.loaded / progress.total) * 100)}%</span>
+          </div>
+          <progress
+            max={progress.total}
+            value={progress.loaded}
+            aria-label="Bytes enviados"
+          />
+          <p role="status">
+            {formatBytes(progress.loaded)} de {formatBytes(progress.total)}{" "}
+            enviados.{" "}
+            {progress.phase === "saving"
+              ? "Los archivos ya llegaron; estamos confirmando la publicación."
+              : "Mantén esta página abierta hasta finalizar."}
+          </p>
+          {progress.phase !== "saving" ? (
+            <button
+              className="action-button is-dark"
+              type="button"
+              onClick={() => abortRef.current?.abort()}
+            >
+              Cancelar subida
+            </button>
+          ) : null}
+        </section>
+      ) : null}
       <div className="upload-submit-strip">
         <div className="upload-submit-copy">
           <p className="upload-submit-title">Subida de recursos</p>
@@ -438,8 +548,8 @@ export function UploadForm({
 
       {storageLocked ? (
         <p className="status-text is-error">
-          El almacenamiento ya llegó al límite configurado.
-          Elimina recursos o aumenta la capacidad antes de subir otro archivo.
+          El almacenamiento ya llegó al límite configurado. Elimina recursos o
+          aumenta la capacidad antes de subir otro archivo.
         </p>
       ) : null}
       {error ? (

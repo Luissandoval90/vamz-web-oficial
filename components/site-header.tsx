@@ -41,7 +41,7 @@ export function SiteHeader({ actions, extraContent }: SiteHeaderProps) {
         <Link href="/" className="wordmark" aria-label="VAMZ Studio, inicio">
           VAMZ
           <span className="brand-square" />
-          <span className="wordmark-label">STUDIO</span>
+          <span className="wordmark-label">Minecraft & comunidad</span>
         </Link>
         <button
           ref={toggle}
@@ -71,9 +71,13 @@ export function SiteHeader({ actions, extraContent }: SiteHeaderProps) {
               aria-current={pathname.startsWith("/recurs") ? "page" : undefined}
               onClick={() => setOpen(false)}
             >
-              Recursos
+              Explorar
             </Link>
-            <Link href="/minecraft" aria-current={pathname === "/minecraft" ? "page" : undefined} onClick={() => setOpen(false)}>
+            <Link
+              href="/minecraft"
+              aria-current={pathname === "/minecraft" ? "page" : undefined}
+              onClick={() => setOpen(false)}
+            >
               Minecraft
             </Link>
             <Link href="/#comunidad" onClick={() => setOpen(false)}>

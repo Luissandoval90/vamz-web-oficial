@@ -11,6 +11,7 @@ export function SiteFooter() {
         <nav aria-label="Navegación del pie de página">
           <Link href="/recursos">Recursos</Link>
           <Link href="/#comunidad">Comunidad</Link>
+          <Link href="/privacidad">Privacidad</Link>
           <a href="#contenido">Volver arriba ↑</a>
         </nav>
         <span className="copyright">

@@ -37,6 +37,7 @@ services:
     restart: unless-stopped
     environment:
       VAMZ_DOMAIN: ${VAMZ_DOMAIN:?Configura VAMZ_DOMAIN en .env}
+      VAMZ_LEGACY_DOMAIN: ${VAMZ_LEGACY_DOMAIN:-vps-e9431466.vps.ovh.net}
     ports:
       - "80:80"
       - "443:443"

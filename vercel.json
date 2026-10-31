@@ -3,12 +3,12 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "https://vps-e9431466.vps.ovh.net/",
+      "destination": "https://vamz.umifront.com/",
       "permanent": false
     },
     {
       "source": "/:path*",
-      "destination": "https://vps-e9431466.vps.ovh.net/:path*",
+      "destination": "https://vamz.umifront.com/:path*",
       "permanent": false
     }
   ]

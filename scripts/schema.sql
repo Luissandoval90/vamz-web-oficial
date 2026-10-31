@@ -5,6 +5,31 @@ CREATE TABLE IF NOT EXISTS auth_rate_limits (
   expires_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS auth_rate_limits_expiry_idx ON auth_rate_limits(expires_at);
+CREATE TABLE IF NOT EXISTS resource_stats (
+  resource_id TEXT PRIMARY KEY NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  views INTEGER NOT NULL DEFAULT 0 CHECK(views >= 0),
+  downloads INTEGER NOT NULL DEFAULT 0 CHECK(downloads >= 0)
+);
+CREATE TABLE IF NOT EXISTS resource_events (
+  resource_id TEXT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK(kind IN ('view', 'download')),
+  visitor_hash TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  PRIMARY KEY(resource_id,kind,visitor_hash)
+);
+CREATE INDEX IF NOT EXISTS resource_events_expiry_idx ON resource_events(expires_at);
+CREATE TABLE IF NOT EXISTS resource_reviews (
+  id TEXT PRIMARY KEY NOT NULL,
+  resource_id TEXT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+  body TEXT NOT NULL,
+  is_approved INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS resource_reviews_owner_idx ON resource_reviews(resource_id,user_id);
+CREATE INDEX IF NOT EXISTS resource_reviews_public_idx ON resource_reviews(resource_id,is_approved,created_at);
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY NOT NULL,
   email TEXT NOT NULL UNIQUE,

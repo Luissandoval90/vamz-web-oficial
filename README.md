@@ -1,6 +1,6 @@
 # VAMZ Studio
 
-Web de recursos y comunidad construida con Next.js, React y TypeScript. Los visitantes y usuarios exploran los recursos publicados; el panel y las operaciones de gestión están reservados al administrador. Incluye biblioteca con búsqueda y filtros, versiones de Minecraft y redes oficiales.
+Web de recursos y comunidad construida con Next.js, React y TypeScript. Los visitantes exploran y descargan recursos publicados; las cuentas registradas pueden escribir reseñas moderadas. El panel, los archivos, las versiones de Minecraft y las redes oficiales están reservados al administrador.
 
 ## Desarrollo
 
@@ -21,9 +21,9 @@ Copy-Item .env.example .env.local
 
 Completa las variables con las credenciales del proyecto. Usa un secreto aleatorio de al menos 32 caracteres para `JWT_SECRET` y una lista de correos de administradores separada por comas en `ADMIN_EMAILS`.
 
-- Turso almacena usuarios, metadatos de recursos y enlaces sociales.
-- Cloudflare R2 almacena archivos y portadas.
-- `RESOURCE_STORAGE_LIMIT_MB` y `TURSO_STORAGE_LIMIT_GB` establecen los límites mostrados en el panel.
+- La instalación de producción usa SQLite y almacenamiento local en la VPS. Consulta `.env.vps.example` y `deploy/VPS.md`.
+- El código conserva compatibilidad con Turso y Cloudflare R2 para instalaciones anteriores.
+- `RESOURCE_STORAGE_LIMIT_MB`, `MAX_UPLOAD_MB` y `MIN_FREE_SPACE_MB` limitan el almacén y las subidas de la VPS.
 
 En la VPS, el contenedor ejecuta `npm run db:init` antes de iniciar la aplicación; prepara SQLite y la tabla de límites de autenticación sin borrar datos. La carpeta `drizzle` conserva las migraciones anteriores.
 
@@ -35,7 +35,7 @@ npm run build
 npm start
 ```
 
-En Vercel, conserva las variables de entorno de la instalación actual. Los endpoints de autenticación, el almacenamiento y los identificadores de los recursos se mantienen.
+Vercel redirige al dominio principal. La aplicación, la base de datos y los archivos se ejecutan en la VPS mediante Docker Compose.
 
 ## Interfaz
 
@@ -45,6 +45,9 @@ En Vercel, conserva las variables de entorno de la instalación actual. Los endp
 - Búsqueda que admite texto sin tildes, filtros por formato, ordenación y carga de 24 tarjetas por bloque.
 - Animaciones breves que respetan la preferencia de movimiento reducido.
 - Mensajes de error, estados vacíos y páginas 404.
+- Fichas con vistas, descargas iniciadas y puntuaciones de reseñas aprobadas. Los contadores empiezan al activar esta función y deduplican por navegador y día; no representan personas únicas.
+- Una reseña por cuenta y recurso, moderación de nuevas reseñas y ediciones, y retirada por su autor.
+- Progreso real de subidas, bytes enviados y cancelación antes de confirmar la publicación.
 
 El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o superior, o Safari 16.4 o superior. El diseño adaptable no sustituye la validación en dispositivos físicos.
 
@@ -53,10 +56,10 @@ El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o su
 - `app`: páginas y endpoints existentes.
 - `components`: navegación, biblioteca pública, formularios y panel.
 - `lib/public-content.ts`: lectura de recursos publicados y redes oficiales.
-- `app/globals.css`: estilos de la interfaz y reglas de adaptación.
+- `app/library.css`: diseño de la portada, las fichas, las reseñas y la biblioteca; `app/globals.css` conserva los estilos compartidos del panel.
 - `db` y `drizzle`: esquema y migraciones de la base de datos.
 # Alojamiento en VPS
 
 La configuración para alojar la web, SQLite y los archivos en una sola VPS está en [deploy/VPS.md](deploy/VPS.md). Incluye Docker Compose, HTTPS y una herramienta para copiar los datos existentes sin modificar Turso ni R2.
 
-La dirección provisional del despliegue es `https://vps-e9431466.vps.ovh.net`. `vercel.json` redirige la dirección anterior a la VPS conservando la ruta. Al configurar un dominio propio, actualiza `VAMZ_DOMAIN` en la VPS y el destino de esa redirección.
+El dominio principal es `https://vamz.umifront.com`. Caddy redirige el antiguo hostname de OVH y `vercel.json` redirige la dirección anterior conservando la ruta. Las cuentas y los archivos se mantienen; los usuarios deben iniciar sesión al entrar en el dominio nuevo.

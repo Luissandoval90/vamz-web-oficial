@@ -1,4 +1,4 @@
-{$VAMZ_DOMAIN} {
+(vamz_app) {
   encode zstd gzip
   request_body {
     max_size 3GB
@@ -16,4 +16,12 @@
     Strict-Transport-Security "max-age=31536000"
     -Server
   }
+}
+
+{$VAMZ_DOMAIN} {
+  import vamz_app
+}
+
+{$VAMZ_LEGACY_DOMAIN} {
+  redir https://{$VAMZ_DOMAIN}{uri} 308
 }
