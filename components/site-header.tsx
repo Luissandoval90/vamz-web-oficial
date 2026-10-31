@@ -38,7 +38,7 @@ export function SiteHeader({ actions, extraContent }: SiteHeaderProps) {
   return (
     <header className="site-header" ref={header}>
       <div className="header-inner">
-        <Link href="/" className="wordmark" aria-label="VAMZ Studio, inicio">
+        <Link href="/" className="wordmark" aria-label="VAMZ, Minecraft & comunidad, inicio">
           VAMZ
           <span className="brand-square" />
           <span className="wordmark-label">Minecraft & comunidad</span>
