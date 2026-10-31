@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
-import "./world.css";
+import "./library.css";
 import { connection } from "next/server";
 
 const manrope = Manrope({
@@ -11,8 +11,9 @@ const manrope = Manrope({
   display: "swap",
 });
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vamz.umifront.com"),
   title: {
-    default: "VAMZ Studio — Crea tu propio mundo",
+    default: "VAMZ — Recursos para tu mundo de Minecraft",
     template: "%s | VAMZ Studio",
   },
   description:
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "VAMZ Studio",
     description:
-      "Menos límites. Más creatividad. Recursos y comunidad en un mismo lugar.",
+      "Packs, texturas, versiones y opiniones de la comunidad de Minecraft en VAMZ.",
     locale: "es_PE",
     type: "website",
   },

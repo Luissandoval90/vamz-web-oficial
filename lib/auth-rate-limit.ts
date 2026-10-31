@@ -14,17 +14,64 @@ async function consume(key: string, maximum: number, windowSeconds: number) {
       RETURNING attempts, expires_at`,
     args: [key, now + windowSeconds, now, now],
   });
-  await db.execute({ sql: "DELETE FROM auth_rate_limits WHERE expires_at <= ?", args: [now] });
-  return Number(result.rows[0].attempts) > maximum ? Math.max(1, Number(result.rows[0].expires_at) - now) : 0;
+  await db.execute({
+    sql: "DELETE FROM auth_rate_limits WHERE expires_at <= ?",
+    args: [now],
+  });
+  return Number(result.rows[0].attempts) > maximum
+    ? Math.max(1, Number(result.rows[0].expires_at) - now)
+    : 0;
 }
 
-export async function limitAuthentication(request: Request, action: "login" | "register", email?: string) {
+export async function limitPublicAction(
+  request: Request,
+  action: string,
+  maximum: number,
+  seconds: number,
+  userId?: string,
+) {
+  const identity = userId ?? request.headers.get("x-real-ip") ?? "direct";
+  const key = createHash("sha256")
+    .update(`${action}:${identity}`)
+    .digest("hex");
+  const retry = await consume(key, maximum, seconds);
+  return retry
+    ? NextResponse.json(
+        {
+          error:
+            "Has enviado demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+        },
+        { status: 429, headers: { "Retry-After": String(retry) } },
+      )
+    : null;
+}
+
+export async function limitAuthentication(
+  request: Request,
+  action: "login" | "register",
+  email?: string,
+) {
   // Caddy overwrites this header; the application port is not publicly exposed.
-  const identity = email ? `account:${email}` : `ip:${request.headers.get("x-real-ip") ?? "direct"}`;
-  const key = createHash("sha256").update(`${action}:${identity}`).digest("hex");
-  const retry = await consume(key, email ? 12 : action === "register" ? 5 : 40, action === "register" ? 3600 : 900);
+  const identity = email
+    ? `account:${email}`
+    : `ip:${request.headers.get("x-real-ip") ?? "direct"}`;
+  const key = createHash("sha256")
+    .update(`${action}:${identity}`)
+    .digest("hex");
+  const retry = await consume(
+    key,
+    email ? 12 : action === "register" ? 5 : 40,
+    action === "register" ? 3600 : 900,
+  );
   if (!retry) return null;
-  return NextResponse.json({ error: "Demasiados intentos. Espera unos minutos antes de volver a intentarlo." }, {
-    status: 429, headers: { "Retry-After": String(retry), "Cache-Control": "no-store" },
-  });
+  return NextResponse.json(
+    {
+      error:
+        "Demasiados intentos. Espera unos minutos antes de volver a intentarlo.",
+    },
+    {
+      status: 429,
+      headers: { "Retry-After": String(retry), "Cache-Control": "no-store" },
+    },
+  );
 }

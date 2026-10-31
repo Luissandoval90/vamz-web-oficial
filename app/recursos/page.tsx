@@ -6,13 +6,20 @@ import { getPublicResources } from "@/lib/public-content";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
+  alternates: { canonical: "/recursos" },
   title: "Recursos",
   description:
     "Explora y descarga los recursos y portadas publicados por VAMZ Studio.",
 };
 
-export default async function RecursosPage() {
+export default async function RecursosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const resources = await getPublicResources();
+  const params = await searchParams;
+  const query = typeof params.q === "string" ? params.q.slice(0, 120) : "";
   return (
     <PublicFrame>
       <main className="page-shell catalog-page" id="contenido">
@@ -24,21 +31,29 @@ export default async function RecursosPage() {
         <div className="catalog-page-heading">
           <div>
             <p className="section-kicker">Biblioteca de VAMZ</p>
-            <h1 className="page-title">
-              Encuentra tu próximo recurso.
-            </h1>
+            <h1 className="page-title">La biblioteca de VAMZ.</h1>
             <p className="lead">
-              Busca por nombre, filtra por tipo y descarga lo que necesitas para tu mundo.
+              Busca por nombre, filtra por tipo y descarga lo que necesitas para
+              tu mundo.
             </p>
           </div>
           <div className="catalog-heading-mark" aria-hidden="true">
             <span>{resources.length}</span>
           </div>
         </div>
-        <ResourceCatalog resources={resources} />
+        <ResourceCatalog
+          key={query}
+          resources={resources}
+          initialSearch={query}
+        />
         <section className="contribute-banner">
-          <div><h2>¿Buscas una versión de Minecraft?</h2><p>Consulta las versiones disponibles por edición y dispositivo.</p></div>
-          <Link className="action-button is-accent" href="/minecraft">Ver versiones</Link>
+          <div>
+            <h2>¿Buscas una versión de Minecraft?</h2>
+            <p>Consulta las versiones disponibles por edición y dispositivo.</p>
+          </div>
+          <Link className="action-button is-accent" href="/minecraft">
+            Ver versiones
+          </Link>
         </section>
       </main>
     </PublicFrame>

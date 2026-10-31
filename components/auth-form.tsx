@@ -3,8 +3,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { UiIcon } from "@/components/ui-icon";
+import { safeReturnPath } from "@/lib/return-path";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({
+  mode,
+  returnTo,
+}: {
+  mode: "login" | "register";
+  returnTo?: string | null;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,7 +47,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           result?.error ??
             "No pudimos procesar tu solicitud. Inténtalo de nuevo.",
         );
-      router.push(result?.redirectTo === "/dashboard" ? "/dashboard" : "/recursos");
+      router.push(
+        safeReturnPath(returnTo) ||
+          (result?.redirectTo === "/dashboard" ? "/dashboard" : "/recursos"),
+      );
       router.refresh();
     } catch (failure) {
       setError(
@@ -55,7 +65,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     <section className="auth-card">
       <div className="section-heading">
         <p className="section-kicker">
-          {login ? "QUÉ BUENO VERTE DE NUEVO" : "UN NUEVO COMIENZO"}
+          {login ? "Qué bueno verte de nuevo" : "Un nuevo comienzo"}
         </p>
         <h1 className="page-title">
           {login ? "Vuelve a tu mundo." : "Hazlo parte de ti."}
@@ -63,7 +73,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         <p>
           {login
             ? "Inicia sesión con tu cuenta de VAMZ."
-            : "Crea tu cuenta para explorar los recursos de VAMZ. Las publicaciones están a cargo del administrador."}
+            : "Crea tu cuenta para valorar los recursos y compartir tu experiencia con la comunidad."}
         </p>
       </div>
       <form className="form-grid" onSubmit={handleSubmit} aria-busy={pending}>
@@ -150,7 +160,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </form>
       <p className="auth-switch">
         {login ? "¿Todavía no tienes cuenta?" : "¿Ya eres parte?"}{" "}
-        <Link href={login ? "/register" : "/login"}>
+        <Link
+          href={
+            (login ? "/register" : "/login") +
+            (safeReturnPath(returnTo)
+              ? `?returnTo=${encodeURIComponent(returnTo!)}`
+              : "")
+          }
+        >
           {login ? "Crea una cuenta" : "Inicia sesión"}
         </Link>
       </p>

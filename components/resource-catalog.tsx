@@ -1,17 +1,16 @@
 "use client";
 import Link from "next/link";
 import { useDeferredValue, useState } from "react";
-import { ResourceThumb } from "@/components/resource-thumb";
+import { ResourceCard } from "@/components/resource-card";
 import { UiIcon } from "@/components/ui-icon";
+import { type ResourceMetricsData } from "@/components/resource-metrics";
 import {
-  formatBytes,
-  getResourceKind,
   imageExtensions,
   archiveExtensions,
   getFileExtension,
 } from "@/lib/resource-utils";
 
-export type CatalogResource = {
+export type CatalogResource = Partial<ResourceMetricsData> & {
   id: string;
   filename: string;
   title: string | null;
@@ -29,7 +28,6 @@ const categories = [
   "Documentos",
   "Otros",
 ];
-const publishedDate = new Intl.DateTimeFormat("es-PE", { day: "numeric", month: "short", timeZone: "UTC" });
 const normalize = (text: string) =>
   text
     .normalize("NFD")
@@ -49,11 +47,13 @@ const categoryFor = (filename: string) => {
 export function ResourceCatalog({
   resources,
   compact = false,
+  initialSearch = "",
 }: {
   resources: CatalogResource[];
   compact?: boolean;
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [category, setCategory] = useState("Todos");
   const [sort, setSort] = useState("recent");
   const [visibleCount, setVisibleCount] = useState(24);
@@ -66,13 +66,17 @@ export function ResourceCatalog({
       ).includes(query),
   );
   const sorted = [...filtered].sort((a, b) =>
-    sort === "name"
-      ? (a.title || a.filename).localeCompare(b.title || b.filename, "es")
-      : sort === "size"
-        ? a.fileSize - b.fileSize
-        : (b.publishedAt || b.createdAt).localeCompare(
-            a.publishedAt || a.createdAt,
-          ),
+    sort === "popular"
+      ? (b.views ?? 0) - (a.views ?? 0)
+      : sort === "rating"
+        ? (b.rating ?? 0) - (a.rating ?? 0)
+        : sort === "name"
+          ? (a.title || a.filename).localeCompare(b.title || b.filename, "es")
+          : sort === "size"
+            ? a.fileSize - b.fileSize
+            : (b.publishedAt || b.createdAt).localeCompare(
+                a.publishedAt || a.createdAt,
+              ),
   );
 
   return (
@@ -109,6 +113,8 @@ export function ResourceCatalog({
                 aria-label="Ordenar recursos"
               >
                 <option value="recent">Más recientes</option>
+                <option value="popular">Más vistos</option>
+                <option value="rating">Mejor valorados</option>
                 <option value="name">Nombre: A a Z</option>
                 <option value="size">Menor tamaño</option>
               </select>
@@ -142,39 +148,7 @@ export function ResourceCatalog({
         <>
           <div className="public-resource-grid">
             {sorted.slice(0, visibleCount).map((resource) => (
-              <article className="resource-card" key={resource.id}>
-                <Link
-                  className="resource-card-link"
-                  href={`/recurso/${resource.id}`}
-                >
-                  <div className="resource-card-media">
-                    <ResourceThumb resource={resource} optimize />
-                    <span className="resource-kind">
-                      {getResourceKind(resource.filename)}
-                    </span>
-                    <span className="resource-open">
-                      <UiIcon name="external" />
-                    </span>
-                  </div>
-                  <div className="resource-card-copy">
-                    <div className="resource-card-meta">
-                      <span>{formatBytes(resource.fileSize)}</span>
-                      <span>
-                        {publishedDate.format(
-                          new Date(resource.publishedAt ?? resource.createdAt),
-                        )}
-                      </span>
-                    </div>
-                    <h3>{resource.title?.trim() || resource.filename}</h3>
-                    <p>
-                      {resource.description?.trim() || `Por ${resource.author}`}
-                    </p>
-                    <span className="resource-card-action">
-                      Ver recurso <UiIcon name="arrow" />
-                    </span>
-                  </div>
-                </Link>
-              </article>
+              <ResourceCard resource={resource} key={resource.id} />
             ))}
           </div>
           {sorted.length > visibleCount ? (

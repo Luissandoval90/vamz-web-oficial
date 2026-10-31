@@ -7,8 +7,8 @@ import { FloatingRail } from "@/components/floating-rail";
 import { LogoutButton } from "@/components/logout-button";
 import { ResourceLibrary } from "@/components/resource-library";
 import { SocialLinksManager } from "@/components/social-links-manager";
+import { ReviewModeration } from "@/components/review-moderation";
 import { UploadForm } from "@/components/upload-form";
-import { getFileExtension, imageExtensions } from "@/lib/resource-utils";
 import type { MinecraftVersionMetadata } from "@/lib/minecraft-versions";
 
 type DashboardResource = {
@@ -51,7 +51,9 @@ type DashboardShellProps = {
     availableBytes: number;
     usagePercent: number;
   };
-  initialView: "panel" | "links" | "minecraft";
+  reviews: React.ComponentProps<typeof ReviewModeration>["reviews"];
+  activity: { views: number; downloads: number; reviews: number };
+  initialView: "panel" | "links" | "minecraft" | "reviews";
 };
 
 export function DashboardShell({
@@ -62,23 +64,14 @@ export function DashboardShell({
   maxUploadBytes,
   socialLinks,
   resourcesStorage,
+  reviews,
+  activity,
   initialView,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const view = initialView;
 
   const displayName = user.username || user.email;
-  const featuredResource = resources.find(
-    (resource) =>
-      resource.coverPath ||
-      imageExtensions.has(getFileExtension(resource.filename)),
-  );
-  const featuredPreview = featuredResource
-    ? featuredResource.coverPath
-      ? `/api/resources/${featuredResource.id}/cover`
-      : `/api/resources/${featuredResource.id}`
-    : "/vamz-character.webp";
-
   const navigationItems = [
     {
       id: "home",
@@ -98,17 +91,28 @@ export function DashboardShell({
       icon: "stats" as const,
       href: "/dashboard",
     },
-    ...(isAdmin ? [{
-      id: "minecraft" as const,
-      label: "Minecraft",
-      icon: "folder" as const,
-      href: "/dashboard?view=minecraft",
-    }, {
-      id: "links" as const,
-      label: "Redes",
-      icon: "link" as const,
-      href: "/dashboard?view=links",
-    }] : []),
+    ...(isAdmin
+      ? [
+          {
+            id: "reviews" as const,
+            label: "Reseñas",
+            icon: "user" as const,
+            href: "/dashboard?view=reviews",
+          },
+          {
+            id: "minecraft" as const,
+            label: "Minecraft",
+            icon: "folder" as const,
+            href: "/dashboard?view=minecraft",
+          },
+          {
+            id: "links" as const,
+            label: "Redes",
+            icon: "link" as const,
+            href: "/dashboard?view=links",
+          },
+        ]
+      : []),
   ];
 
   const currentView = navigationItems.find((item) => item.id === view);
@@ -117,7 +121,7 @@ export function DashboardShell({
     <>
       <UploadForm
         title="Panel de recursos"
-        description={isAdmin ? "Publica y organiza los recursos de la comunidad." : "Comparte tus recursos. Tienes 180 MB en total para archivos y portadas."}
+        description="Publica y organiza los recursos de la comunidad."
         submitLabel="Subir recurso"
         successMessage="Recurso subido y publicado."
         publishOnUpload
@@ -128,9 +132,9 @@ export function DashboardShell({
       <ResourceLibrary
         resources={resources}
         kicker="Panel"
-        title={isAdmin ? "Recursos de la comunidad" : "Tus recursos"}
-        description="Desde aqui puedes editar, ordenar y publicar lo que quieras mostrar en la web."
-        emptyStateCopy="Todavia no has subido ningun recurso."
+        title="Recursos de la comunidad"
+        description="Desde aquí puedes editar, ordenar y publicar lo que quieras mostrar en la web."
+        emptyStateCopy="Todavía no has subido ningun recurso."
         showSearch
         showEditControls
         className="library-panel dashboard-library-block"
@@ -139,14 +143,32 @@ export function DashboardShell({
   );
 
   const renderLinksView = () => <SocialLinksManager links={socialLinks} />;
-  const renderMinecraftView = () => <>
-    <UploadForm key="minecraft" minecraftMode kicker="Solo administradores" title="Subir versión de Minecraft"
-      description="Añade el archivo, el número de versión, la edición y la plataforma."
-      submitLabel="Publicar versión" successMessage="Versión de Minecraft publicada." publishOnUpload storage={resourcesStorage} maxUploadBytes={maxUploadBytes} />
-    <ResourceLibrary resources={versions} kicker="Minecraft" title="Versiones publicadas"
-      description="Gestiona las descargas que aparecen en la sección Minecraft."
-      emptyStateCopy="Todavía no has subido ninguna versión de Minecraft." showSearch showEditControls className="library-panel dashboard-library-block" />
-  </>;
+  const renderMinecraftView = () => (
+    <>
+      <UploadForm
+        key="minecraft"
+        minecraftMode
+        kicker="Solo administradores"
+        title="Subir versión de Minecraft"
+        description="Añade el archivo, el número de versión, la edición y la plataforma."
+        submitLabel="Publicar versión"
+        successMessage="Versión de Minecraft publicada."
+        publishOnUpload
+        storage={resourcesStorage}
+        maxUploadBytes={maxUploadBytes}
+      />
+      <ResourceLibrary
+        resources={versions}
+        kicker="Minecraft"
+        title="Versiones publicadas"
+        description="Gestiona las descargas que aparecen en la sección Minecraft."
+        emptyStateCopy="Todavía no has subido ninguna versión de Minecraft."
+        showSearch
+        showEditControls
+        className="library-panel dashboard-library-block"
+      />
+    </>
+  );
 
   return (
     <>
@@ -197,26 +219,45 @@ export function DashboardShell({
                   {currentView?.label ?? "Panel"}
                 </p>
                 <h1 className="page-title dashboard-page-title">
-                  {isAdmin ? "Panel de administración." : "Tu espacio."}
+                  {view === "panel"
+                    ? "Tu biblioteca, en orden."
+                    : view === "minecraft"
+                      ? "Versiones de Minecraft"
+                      : view === "reviews"
+                        ? "Opiniones de la comunidad"
+                        : "Tus redes oficiales"}
                 </h1>
                 <p className="lead">
-                  Hola, {displayName}. {isAdmin ? "Gestiona los recursos, las versiones de Minecraft y las redes de la comunidad." : "Sube, edita y organiza tus recursos desde un solo lugar."}
+                  Hola, {displayName}. Publica, organiza y revisa la actividad
+                  de la biblioteca.
                 </p>
-              </div>
-
-              <div className="hero-media dashboard-hero-media">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="hero-media-image"
-                  src={featuredPreview}
-                  alt="Preview destacado"
-                />
               </div>
             </section>
 
-            {view === "panel" ? renderPanelView() : null}
+            {view === "panel" ? (
+              <>
+                <div className="admin-stat-strip">
+                  <div>
+                    <span>Visitas registradas</span>
+                    <strong>{activity.views}</strong>
+                  </div>
+                  <div>
+                    <span>Descargas iniciadas</span>
+                    <strong>{activity.downloads}</strong>
+                  </div>
+                  <div>
+                    <span>Reseñas publicadas</span>
+                    <strong>{activity.reviews}</strong>
+                  </div>
+                </div>
+                {renderPanelView()}
+              </>
+            ) : null}
             {view === "links" ? renderLinksView() : null}
             {view === "minecraft" && isAdmin ? renderMinecraftView() : null}
+            {view === "reviews" && isAdmin ? (
+              <ReviewModeration reviews={reviews} />
+            ) : null}
           </section>
         </div>
       </main>

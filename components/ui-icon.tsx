@@ -8,15 +8,24 @@ type IconName =
   | "menu"
   | "grid"
   | "check";
+type CommunityIconName =
+  "star" | "eye" | "message" | "clock" | "shield" | "heart";
 
 export function UiIcon({
   name,
   className = "",
 }: {
-  name: IconName;
+  name: IconName | CommunityIconName;
   className?: string;
 }) {
-  const paths: Record<IconName, string> = {
+  const paths: Record<IconName | CommunityIconName, string> = {
+    star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z",
+    eye: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Zm13 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+    message: "M21 11a8 8 0 0 1-8 8H7l-4 3V11a9 9 0 0 1 18 0Z",
+    clock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+    shield: "m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Zm-4 9 3 3 5-6",
+    heart:
+      "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z",
     arrow: "M4 12h16m-6-6 6 6-6 6",
     external: "M7 17 17 7M7 7h10v10",
     search: "m16 16 5 5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
