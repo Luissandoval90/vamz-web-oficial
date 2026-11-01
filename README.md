@@ -1,6 +1,6 @@
 # VAMZ Studio
 
-Web de recursos y comunidad construida con Next.js, React y TypeScript. Los visitantes exploran y descargan recursos publicados; las cuentas registradas pueden escribir reseñas moderadas. El panel, los archivos, las versiones de Minecraft y las redes oficiales están reservados al administrador.
+Web de recursos y comunidad construida con Next.js, React y TypeScript. Los visitantes exploran y descargan recursos publicados; las cuentas registradas pueden comentar sin estrellas o escribir reseñas moderadas. El panel, los archivos, las versiones de Minecraft y las redes oficiales están reservados al administrador.
 
 ## Desarrollo
 
@@ -49,11 +49,13 @@ Vercel redirige al dominio principal. La aplicación, la base de datos y los arc
 - Una reseña por cuenta y recurso, moderación de nuevas reseñas y ediciones, y retirada por su autor.
 - Progreso real de subidas, bytes enviados y cancelación antes de confirmar la publicación.
 - Portada panorámica con carrusel de publicaciones reales, navegación por teclado, pausa al interactuar y reproducción que se detiene fuera de pantalla o al solicitar movimiento reducido.
-- Accesos por tipo de archivo, tira horizontal de descubrimientos, plataformas reales de Minecraft, redes oficiales y ayuda desplegable.
+- Portada sin publicaciones duplicadas entre destacados y selección, una sección de Minecraft, redes oficiales y ayuda desplegable.
+- Entradas al desplazarse, aparición escalonada de tarjetas, movimiento suave de fondo y progreso de lectura. El contenido sigue disponible sin JavaScript y al solicitar movimiento reducido.
+- Comentarios con moderación, vista de mensajes propios pendientes y respuestas del administrador. El autor puede comentar su recurso, pero no autoevaluarse con estrellas.
 
 `app/studio.css` define la identidad y los componentes de presentación. `app/library.css` conserva los estilos de fichas, reseñas y administración; se retiraron las reglas de la portada anterior.
 
-La prueba de interacción `scripts/test-studio-ui.mjs` se ejecuta con `playwright-cli run-code --filename=scripts/test-studio-ui.mjs` después de abrir una vista previa aislada con varios recursos publicados, incluido el recurso de prueba Spectral. Comprueba carrusel, pausa, enlaces, teclado, movimiento reducido, tira, ayuda, menú móvil y filtros. No se debe ejecutar contra producción con cuentas de prueba o archivos ficticios.
+La prueba de interacción `scripts/test-studio-ui.mjs` se ejecuta con `playwright-cli run-code --filename=scripts/test-studio-ui.mjs` después de abrir una vista previa aislada con varios recursos publicados, incluido el recurso de prueba Spectral. Comprueba carrusel, pausa, enlaces, teclado, movimiento reducido, ausencia de publicaciones repetidas, ayuda, menú móvil y filtros. `test:vps` cubre también comentarios, moderación, privacidad y retirada propia. No se deben publicar cuentas o mensajes ficticios en producción.
 
 El navegador debe ser compatible con Next.js 16: Chrome, Edge y Firefox 111 o superior, o Safari 16.4 o superior. El diseño adaptable no sustituye la validación en dispositivos físicos.
 

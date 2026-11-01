@@ -24,6 +24,7 @@ import {
   getResourceSummary,
 } from "@/lib/resource-engagement";
 import { engagementColumns } from "@/lib/public-content";
+import { getResourceComments } from "@/lib/resource-comments";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -91,9 +92,10 @@ export default async function ResourceDetailPage({
     .limit(1);
   if (!resource) notFound();
   const user = await getCurrentUser();
-  const [summary, reviewData, related] = await Promise.all([
+  const [summary, reviewData, commentData, related] = await Promise.all([
     getResourceSummary(resourceId),
     getResourceReviews(resourceId, user?.id),
+    getResourceComments(resourceId, user?.id),
     db
       .select({
         id: resources.id,
@@ -236,6 +238,8 @@ export default async function ResourceDetailPage({
           initialSummary={summary}
           initialReviews={reviewData.reviews}
           ownReview={reviewData.ownReview}
+          initialComments={commentData.comments}
+          initialCommentCount={commentData.commentCount}
           loggedIn={Boolean(user)}
           canReview={user?.id !== resource.userId}
         />

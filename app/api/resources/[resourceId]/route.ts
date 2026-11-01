@@ -11,6 +11,7 @@ import {
   resourceEvents,
   resourceReviews,
   resourceStats,
+  resourceComments,
 } from "@/db/schema";
 import {
   getVisitor,
@@ -226,6 +227,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     await tx
       .delete(resourceReviews)
       .where(eq(resourceReviews.resourceId, resourceId));
+    await tx
+      .delete(resourceComments)
+      .where(eq(resourceComments.resourceId, resourceId));
     await tx
       .delete(resourceStats)
       .where(eq(resourceStats.resourceId, resourceId));

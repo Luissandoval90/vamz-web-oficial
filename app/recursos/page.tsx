@@ -32,15 +32,11 @@ export default async function RecursosPage({
         </nav>
         <div className="catalog-page-heading">
           <div>
-            <p className="section-kicker">Biblioteca de VAMZ</p>
-            <h1 className="page-title">La biblioteca de VAMZ.</h1>
+            <h1 className="page-title">Recursos para tu mundo.</h1>
             <p className="lead">
               Busca por nombre, filtra por tipo y descarga lo que necesitas para
               tu mundo.
             </p>
-          </div>
-          <div className="catalog-heading-mark" aria-hidden="true">
-            <span>{resources.length}</span>
           </div>
         </div>
         <ResourceCatalog

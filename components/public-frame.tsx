@@ -5,10 +5,12 @@ import { SiteFooter } from "@/components/site-footer";
 import { LogoutButton } from "@/components/logout-button";
 import { getCurrentUser } from "@/lib/server-auth";
 import { isAdminEmail } from "@/lib/admin";
+import { ScrollMotion } from "@/components/scroll-motion";
 export async function PublicFrame({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   return (
     <>
+      <ScrollMotion />
       <SiteHeader
         actions={
           user
@@ -25,7 +27,11 @@ export async function PublicFrame({ children }: { children: ReactNode }) {
         extraContent={
           user ? (
             <>
-              {isAdminEmail(user.email) ? <Link className="action-button is-accent" href="/dashboard">Administrar</Link> : null}
+              {isAdminEmail(user.email) ? (
+                <Link className="action-button is-accent" href="/dashboard">
+                  Administrar
+                </Link>
+              ) : null}
               <LogoutButton className="action-button is-text" />
             </>
           ) : null

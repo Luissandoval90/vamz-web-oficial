@@ -8,8 +8,9 @@ export default function PrivacyPage() {
         <p className="section-kicker">Tu cuenta y tus datos</p>
         <h1>Privacidad, sin letra pequeña.</h1>
         <p>
-          VAMZ almacena la información necesaria para tus cuentas, las reseñas y
-          el funcionamiento de la biblioteca en su propia VPS.
+          VAMZ almacena la información necesaria para tus cuentas, los
+          comentarios, las reseñas y el funcionamiento de la biblioteca en su
+          propia VPS.
         </p>
         <h2>Tu cuenta</h2>
         <p>
@@ -17,11 +18,15 @@ export default function PrivacyPage() {
           protegido de tu contraseña. El correo no aparece en las reseñas; el
           nombre de usuario sí es público cuando una reseña se aprueba.
         </p>
-        <h2>Reseñas</h2>
+        <h2>Comentarios y reseñas</h2>
         <p>
           Puedes actualizar o retirar tu propia reseña desde la página del
           recurso. Una reseña nueva o editada queda pendiente de revisión por el
-          administrador antes de publicarse.
+          administrador antes de publicarse. Los comentarios no requieren
+          estrellas. Puedes retirar los tuyos desde la ficha; los mensajes de
+          cuentas normales se revisan antes de mostrarse públicamente y su autor
+          puede verlos mientras están pendientes. Los comentarios del
+          administrador se publican directamente.
         </p>
         <h2>Visitas y descargas</h2>
         <p>

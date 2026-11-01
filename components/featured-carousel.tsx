@@ -144,9 +144,6 @@ export function FeaturedCarousel({
           >
             Ver recurso <UiIcon name="arrow" />
           </Link>
-          <Link href="/recursos" className="spotlight-library">
-            Explorar biblioteca <UiIcon name="grid" />
-          </Link>
         </div>
       </div>
       {resources.length > 1 ? (

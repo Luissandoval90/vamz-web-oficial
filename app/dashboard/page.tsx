@@ -1,4 +1,4 @@
-import { asc, desc, eq, getTableColumns } from "drizzle-orm";
+import { asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { getDb } from "@/db";
 import {
@@ -7,6 +7,7 @@ import {
   users,
   minecraftVersions,
   resourceReviews,
+  resourceComments,
 } from "@/db/schema";
 import {
   buildStorageSummary,
@@ -40,7 +41,7 @@ export default async function DashboardPage({
         : admin && params?.view === "minecraft"
           ? "minecraft"
           : "panel";
-  const [profiles, rows, links, reviews] = await Promise.all([
+  const [profiles, rows, links, reviews, comments] = await Promise.all([
     db
       .select({ username: users.username })
       .from(users)
@@ -78,7 +79,33 @@ export default async function DashboardPage({
           .from(resourceReviews)
           .innerJoin(resources, eq(resources.id, resourceReviews.resourceId))
           .innerJoin(users, eq(users.id, resourceReviews.userId))
-          .orderBy(asc(resourceReviews.isApproved), desc(resourceReviews.updatedAt))
+          .orderBy(
+            asc(resourceReviews.isApproved),
+            desc(resourceReviews.updatedAt),
+          )
+          .limit(200)
+      : Promise.resolve([]),
+    view === "reviews"
+      ? db
+          .select({
+            id: resourceComments.id,
+            resourceId: resourceComments.resourceId,
+            title: resources.title,
+            filename: resources.filename,
+            username: users.username,
+            rating: sql<null>`null`,
+            body: resourceComments.body,
+            approved: resourceComments.isApproved,
+            updatedAt: resourceComments.updatedAt,
+            kind: sql<"comment">`'comment'`,
+          })
+          .from(resourceComments)
+          .innerJoin(resources, eq(resources.id, resourceComments.resourceId))
+          .innerJoin(users, eq(users.id, resourceComments.userId))
+          .orderBy(
+            asc(resourceComments.isApproved),
+            desc(resourceComments.updatedAt),
+          )
           .limit(200)
       : Promise.resolve([]),
   ]);
@@ -107,7 +134,13 @@ export default async function DashboardPage({
       resources={items.filter((item) => !item.minecraft)}
       versions={items.filter((item) => item.minecraft)}
       socialLinks={links}
-      reviews={reviews}
+      reviews={[...reviews, ...comments]
+        .sort(
+          (a, b) =>
+            Number(a.approved) - Number(b.approved) ||
+            b.updatedAt.localeCompare(a.updatedAt),
+        )
+        .slice(0, 200)}
       activity={{
         views: rows.reduce((sum, row) => sum + Number(row.metrics.views), 0),
         downloads: rows.reduce(

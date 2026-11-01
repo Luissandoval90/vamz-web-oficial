@@ -95,7 +95,7 @@ export function DashboardShell({
       ? [
           {
             id: "reviews" as const,
-            label: "Reseñas",
+            label: "Comunidad",
             icon: "user" as const,
             href: "/dashboard?view=reviews",
           },

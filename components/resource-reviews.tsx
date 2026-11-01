@@ -1,12 +1,8 @@
 "use client";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  ResourceMetrics,
-  type ResourceMetricsData,
-} from "@/components/resource-metrics";
+import { OpinionComposer } from "@/components/opinion-composer";
+import type { ResourceMetricsData } from "@/components/resource-metrics";
 import { UiIcon } from "@/components/ui-icon";
-
 export type PublicReview = {
   id: string;
   rating: number;
@@ -16,23 +12,38 @@ export type PublicReview = {
   updatedAt: string;
   approved: boolean;
 };
+export type PublicComment = {
+  id: string;
+  body: string;
+  username: string;
+  createdAt: string;
+  approved: boolean;
+  isOwn: boolean;
+  isAuthor: boolean;
+};
 type Props = {
   resourceId: string;
   initialSummary: ResourceMetricsData;
   initialReviews: PublicReview[];
   ownReview: PublicReview | null;
+  initialComments: PublicComment[];
+  initialCommentCount: number;
   loggedIn: boolean;
   canReview: boolean;
 };
-const reviewDate = new Intl.DateTimeFormat("es-PE", {
+const date = new Intl.DateTimeFormat("es-PE", {
   day: "numeric",
-  month: "long",
+  month: "short",
   year: "numeric",
   timeZone: "UTC",
 });
-function RatingStars({ value }: { value: number }) {
+function Stars({ value }: { value: number }) {
   return (
-    <span className="rating-stars" role="img" aria-label={value ? `${value} de 5 estrellas` : "Sin valoraciones"}>
+    <span
+      className="rating-stars"
+      role="img"
+      aria-label={`${value} de 5 estrellas`}
+    >
       {[1, 2, 3, 4, 5].map((star) => (
         <span key={star} className={star <= value ? "is-filled" : ""}>
           <UiIcon name="star" />
@@ -45,92 +56,85 @@ export function ResourceReviews({
   resourceId,
   initialSummary,
   initialReviews,
-  ownReview: initialOwn,
+  ownReview,
+  initialComments,
+  initialCommentCount,
   loggedIn,
   canReview,
 }: Props) {
   const [summary, setSummary] = useState(initialSummary);
   const [reviews, setReviews] = useState(initialReviews);
-  const [own, setOwn] = useState(initialOwn);
-  const [rating, setRating] = useState(initialOwn?.rating ?? 0);
-  const [body, setBody] = useState(initialOwn?.body ?? "");
-  const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [own, setOwn] = useState(ownReview);
+  const [comments, setComments] = useState(initialComments);
+  const [commentCount, setCommentCount] = useState(initialCommentCount);
+  const [filter, setFilter] = useState("all");
+  const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
   const counted = useRef(false);
   useEffect(() => {
-    const countView = () => {
+    const count = () => {
       if (document.visibilityState !== "visible" || counted.current) return;
       counted.current = true;
       void fetch(`/api/resources/${resourceId}/stats`, { method: "POST" })
-        .then((response) => (response.ok ? response.json() : null))
+        .then((r) => (r.ok ? r.json() : null))
         .then((value) => {
           if (value) setSummary(value);
         })
         .catch(() => {});
     };
-    countView();
-    document.addEventListener("visibilitychange", countView);
-    return () => document.removeEventListener("visibilitychange", countView);
+    count();
+    document.addEventListener("visibilitychange", count);
+    return () => document.removeEventListener("visibilitychange", count);
   }, [resourceId]);
-  async function refresh() {
-    const response = await fetch(`/api/resources/${resourceId}/reviews`, {
-      cache: "no-store",
-    });
-    if (!response.ok) throw Error("No se pudieron actualizar las reseñas.");
-    const data = await response.json();
-    setReviews(data.reviews);
-    setOwn(data.ownReview);
-    setSummary(data.summary);
+  async function refresh(kind?: "comment" | "review") {
+    const [reviewResponse, commentResponse] = await Promise.all([
+      fetch(`/api/resources/${resourceId}/reviews`, { cache: "no-store" }),
+      fetch(`/api/resources/${resourceId}/comments`, { cache: "no-store" }),
+    ]);
+    if (!reviewResponse.ok || !commentResponse.ok)
+      throw Error("No se pudieron actualizar las opiniones.");
+    const [reviewData, commentData] = await Promise.all([
+      reviewResponse.json(),
+      commentResponse.json(),
+    ]);
+    setReviews(reviewData.reviews);
+    setOwn(reviewData.ownReview);
+    setSummary(reviewData.summary);
+    setComments(commentData.comments);
+    setCommentCount(commentData.commentCount);
+    if (kind) setFilter(kind);
   }
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function removeComment(id: string) {
     if (pending) return;
-    setPending(true);
-    setError("");
-    setFeedback("");
-    try {
-      const response = await fetch(`/api/resources/${resourceId}/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, body }),
-      });
-      const data = await response.json();
-      if (!response.ok)
-        throw Error(data.error ?? "No se pudo guardar la reseña.");
-      setFeedback(data.message);
-      await refresh();
-    } catch (failure) {
-      setError(
-        failure instanceof Error
-          ? failure.message
-          : "Revisa tu conexión e inténtalo de nuevo.",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-  async function remove() {
-    if (pending) return;
-    setPending(true);
+    setPending(id);
     setError("");
     try {
-      const response = await fetch(`/api/resources/${resourceId}/reviews`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw Error("No se pudo retirar la reseña.");
-      setRating(0);
-      setBody("");
-      setFeedback("Tu reseña se ha retirado.");
+      const response = await fetch(`/api/comments/${id}`, { method: "DELETE" });
+      if (!response.ok) throw Error("No se pudo retirar el comentario.");
       await refresh();
     } catch (failure) {
       setError(
         failure instanceof Error ? failure.message : "Revisa tu conexión.",
       );
     } finally {
-      setPending(false);
+      setPending(null);
     }
   }
+  const visibleReviews =
+    own && !reviews.some((row) => row.id === own.id)
+      ? [own, ...reviews]
+      : reviews;
+  const entries = [
+    ...comments.map((row) => ({ ...row, kind: "comment" as const, rating: 0 })),
+    ...visibleReviews.map((row) => ({
+      ...row,
+      kind: "review" as const,
+      isOwn: row.id === own?.id,
+      isAuthor: false,
+    })),
+  ]
+    .filter((row) => filter === "all" || row.kind === filter)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   return (
     <section
       id="resenas"
@@ -138,178 +142,106 @@ export function ResourceReviews({
       aria-labelledby="reviews-title"
     >
       <div className="detail-section-heading">
-        <div>
-          <p className="section-kicker">La experiencia de la comunidad</p>
-          <h2 id="reviews-title">Reseñas y valoraciones</h2>
-        </div>
+        <h2 id="reviews-title">Comentarios y reseñas</h2>
         <span className="review-total">
-          {summary.reviewCount}{" "}
-          {summary.reviewCount === 1 ? "reseña" : "reseñas"}
+          {commentCount + summary.reviewCount} opiniones publicadas
         </span>
-      </div>
-      <div className="review-summary-panel">
-        <div className="review-score">
-          <strong>
-            {summary.reviewCount ? summary.rating.toFixed(1) : "—"}
-          </strong>
-          <div>
-            <RatingStars value={Math.round(summary.rating)} />
-            <p>
-              {summary.reviewCount
-                ? "Valoración de la comunidad"
-                : "Sé el primero en compartir tu experiencia"}
-            </p>
-          </div>
-        </div>
-        <ResourceMetrics {...summary} />
       </div>
       <div className="reviews-layout">
         <div className="review-list">
-          {reviews.length ? (
-            reviews.map((review) => (
-              <article className="review-item" key={review.id}>
-                <div className="review-person">
-                  <span className="review-avatar" aria-hidden="true">
-                    {review.username.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div>
-                    <strong>{review.username}</strong>
-                    <time dateTime={review.createdAt}>
-                      {reviewDate.format(new Date(review.createdAt))}
-                    </time>
-                  </div>
-                  <RatingStars value={review.rating} />
-                </div>
-                <p>{review.body}</p>
-              </article>
-            ))
-          ) : (
-            <div className="reviews-empty">
-              <UiIcon name="message" />
-              <h3>Aquí empieza la conversación.</h3>
-              <p>
-                ¿Lo has probado? Cuenta qué te ha parecido para ayudar a otros a
-                elegir.
-              </p>
-            </div>
-          )}
-        </div>
-        <aside className="review-composer">
-          {!loggedIn ? (
-            <>
-              <h3>Tu opinión cuenta.</h3>
-              <p>
-                Inicia sesión para valorar el recurso y compartir una reseña.
-              </p>
-              <Link className="action-button is-accent" href={`/login?returnTo=${encodeURIComponent(`/recurso/${resourceId}#resenas`)}`}>
-                Iniciar sesión
-              </Link>
-              <Link className="text-link" href={`/register?returnTo=${encodeURIComponent(`/recurso/${resourceId}#resenas`)}`}>
-                Crear una cuenta
-              </Link>
-            </>
-          ) : canReview ? (
-            <form onSubmit={submit} aria-busy={pending}>
-              <h3>{own ? "Tu reseña" : "¿Qué te ha parecido?"}</h3>
-              <p>
-                Una opinión por cuenta. Las reseñas se revisan antes de
-                aparecer.
-              </p>
-              <fieldset disabled={pending} className="rating-picker">
-                <legend>Tu valoración</legend>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <label
-                    key={value}
-                    className={value <= rating ? "is-selected" : ""}
-                  >
-                    <input
-                      type="radio"
-                      name="rating"
-                      value={value}
-                      checked={rating === value}
-                      onChange={() => setRating(value)}
-                      required
-                      aria-label={`${value} ${value === 1 ? "estrella" : "estrellas"}`}
-                    />
-                    <UiIcon name="star" />
-                  </label>
-                ))}
-              </fieldset>
-              <label className="field">
-                <span className="field-label">Tu experiencia</span>
-                <textarea
-                  name="review"
-                  value={body}
-                  onChange={(event) => setBody(event.target.value)}
-                  minLength={8}
-                  maxLength={1500}
-                  rows={5}
-                  required
-                  disabled={pending}
-                  placeholder="Qué te gustó, cómo lo usaste o qué mejorarías…"
-                />
-              </label>
-              <small className="review-character-count">
-                {body.length}/1500
-              </small>
-              {own && !own.approved ? (
-                <p className="review-pending">
-                  <UiIcon name="clock" />
-                  Pendiente de revisión
-                </p>
-              ) : null}
+          <div
+            className="discussion-filters"
+            role="group"
+            aria-label="Ver opiniones"
+          >
+            {[
+              ["all", "Todas"],
+              ["comment", "Comentarios"],
+              ["review", "Reseñas"],
+            ].map(([value, label]) => (
               <button
-                className="action-button is-accent"
-                type="submit"
-                disabled={pending}
+                key={value}
+                type="button"
+                aria-pressed={filter === value}
+                onClick={() => setFilter(value)}
               >
-                {pending
-                  ? "Guardando…"
-                  : own
-                    ? "Actualizar reseña"
-                    : "Enviar reseña"}
+                {label}
               </button>
-              {own ? (
-                <button
-                  className="text-link review-remove"
-                  type="button"
-                  onClick={remove}
-                  disabled={pending}
-                >
-                  Retirar mi reseña
-                </button>
-              ) : null}
-            </form>
-          ) : (
-            <>
-              <UiIcon name="shield" />
-              <h3>Tu publicación, sus opiniones.</h3>
-              <p>
-                Las valoraciones pertenecen a quienes prueban el recurso. Puedes
-                revisar las reseñas desde la administración.
-              </p>
-              <Link className="text-link" href="/dashboard?view=reviews">
-                Moderar reseñas
-              </Link>
-            </>
-          )}
-          {feedback ? (
-            <p role="status" className="status-text is-ok">
-              {feedback}
-            </p>
-          ) : null}
+            ))}
+          </div>
           {error ? (
             <p role="alert" className="status-text is-error">
               {error}
             </p>
           ) : null}
-        </aside>
+          {entries.length ? (
+            entries.map((entry) => (
+              <article
+                className="review-item discussion-entry"
+                key={entry.kind + entry.id}
+              >
+                <div className="review-person">
+                  <span className="review-avatar" aria-hidden="true">
+                    {entry.username.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div>
+                    <strong>
+                      {entry.username}
+                      {entry.isAuthor ? (
+                        <span className="author-badge">Autor</span>
+                      ) : null}
+                    </strong>
+                    <time dateTime={entry.createdAt}>
+                      {date.format(new Date(entry.createdAt))}
+                    </time>
+                  </div>
+                  {entry.kind === "review" ? (
+                    <Stars value={entry.rating} />
+                  ) : (
+                    <span className="comment-type">
+                      <UiIcon name="message" />
+                    </span>
+                  )}
+                </div>
+                <p>{entry.body}</p>
+                {!entry.approved ? (
+                  <span className="pending-opinion">
+                    <UiIcon name="clock" />
+                    Pendiente de revisión · Solo tú puedes verlo
+                  </span>
+                ) : null}
+                {entry.kind === "comment" && entry.isOwn ? (
+                  <button
+                    type="button"
+                    className="text-link discussion-remove"
+                    disabled={pending !== null}
+                    onClick={() => removeComment(entry.id)}
+                  >
+                    {pending === entry.id ? "Retirando…" : "Retirar comentario"}
+                  </button>
+                ) : null}
+              </article>
+            ))
+          ) : (
+            <p className="discussion-empty">
+              Todavía no hay{" "}
+              {filter === "review"
+                ? "reseñas"
+                : filter === "comment"
+                  ? "comentarios"
+                  : "opiniones"}{" "}
+              en esta vista. Puedes iniciar la conversación aquí.
+            </p>
+          )}
+        </div>
+        <OpinionComposer
+          resourceId={resourceId}
+          loggedIn={loggedIn}
+          canReview={canReview}
+          ownReview={own}
+          onRefresh={refresh}
+        />
       </div>
-      <p className="metrics-explanation">
-        Las visitas y descargas se registran por navegador y día. Las cifras
-        muestran actividad desde que se activaron los contadores; las descargas
-        cuentan cuando se inician.
-      </p>
     </section>
   );
 }

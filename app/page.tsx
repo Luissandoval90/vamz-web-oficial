@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { PublicFrame } from "@/components/public-frame";
 import { FeaturedCarousel } from "@/components/featured-carousel";
-import { ResourceRail } from "@/components/resource-rail";
 import { ResourceCard } from "@/components/resource-card";
 import { SocialLinkIcon } from "@/components/social-link-icon";
 import { UiIcon } from "@/components/ui-icon";
@@ -16,16 +15,13 @@ import {
   getSocialLinkDescription,
   getSocialLinkHandle,
 } from "@/lib/social-links";
-import {
-  archiveExtensions,
-  imageExtensions,
-  getFileExtension,
-} from "@/lib/resource-utils";
+import { formatBytes } from "@/lib/resource-utils";
+import { ResourceThumb } from "@/components/resource-thumb";
 export const dynamic = "force-dynamic";
 const questions = [
   [
     "¿Necesito una cuenta para descargar?",
-    "Puedes explorar y descargar los recursos publicados sin registrarte. Crea una cuenta si quieres dejar una valoración y compartir tu experiencia con la comunidad.",
+    "Puedes explorar y descargar los recursos publicados sin registrarte. Crea una cuenta para comentar o compartir una reseña.",
   ],
   [
     "¿Cómo instalo un pack o addon?",
@@ -46,60 +42,20 @@ export default async function Home() {
     getPublicSocialLinks(),
     getPublicMinecraftVersions(),
   ]);
-  const popular = [...resources]
-    .sort((a, b) => b.downloads - a.downloads || b.views - a.views)
-    .slice(0, 8);
-  const hasActivity = popular.some((item) => item.downloads > 0);
-  const platforms = [...new Set(versions.flatMap((item) => [item.platform, item.edition]))];
+  const featured = resources.slice(0, 4);
+  const featuredIds = new Set(featured.map((resource) => resource.id));
+  const latest = resources
+    .filter((resource) => !featuredIds.has(resource.id))
+    .slice(0, 3);
   const discord = links.find(
     (link) => link.platform.toLowerCase() === "discord",
   );
-  const categories = [
-    {
-      href: "/recursos?type=packs",
-      title: "Packs y addons",
-      description: "Nuevas formas de jugar",
-      icon: "layers" as const,
-      count: resources.filter((item) =>
-        archiveExtensions.has(getFileExtension(item.filename)),
-      ).length,
-    },
-    {
-      href: "/recursos?type=images",
-      title: "Imágenes",
-      description: "Ideas con otro punto de vista",
-      icon: "grid" as const,
-      count: resources.filter((item) =>
-        imageExtensions.has(getFileExtension(item.filename)),
-      ).length,
-    },
-    {
-      href: "/minecraft",
-      title: "Minecraft",
-      description: "Encuentra tu edición y plataforma",
-      icon: "globe" as const,
-      count: versions.length,
-    },
-    {
-      href: "/recursos",
-      title: "Toda la biblioteca",
-      description: "Encuentra tu próximo recurso",
-      icon: "folder" as const,
-      count: resources.length,
-    },
-  ].filter((category) => category.count > 0 || category.href === "/recursos");
   return (
     <PublicFrame>
       <main id="contenido" className="studio-home">
-        <div className="page-shell studio-intro">
-          <p>Tu próxima partida empieza aquí.</p>
-          <span>
-            <span className="online-dot" /> El universo de VAMZ
-          </span>
-        </div>
         <div className="page-shell studio-showcase">
           {resources.length ? (
-            <FeaturedCarousel resources={resources.slice(0, 4)} />
+            <FeaturedCarousel resources={featured} />
           ) : (
             <section className="studio-empty-hero">
               <h1>Un mundo de posibilidades.</h1>
@@ -114,11 +70,14 @@ export default async function Home() {
           )}
           <aside className="creator-note">
             <div className="creator-note-top">
-              <span>El espacio de</span>
+              <span>Un lugar para crear</span>
               <strong>
-                VAMZ<span>.</span>
+                Juega a tu manera<span>.</span>
               </strong>
-              <p>Recursos que le dan otra vida a Minecraft.</p>
+              <p>
+                Ideas y recursos para llevar tu próxima partida un poco más
+                lejos.
+              </p>
             </div>
             <div className="creator-note-character">
               <Image
@@ -130,90 +89,41 @@ export default async function Home() {
                 priority
               />
             </div>
-            <Link href="#comunidad">
-              Juega. Crea. Comparte. <UiIcon name="external" />
-            </Link>
           </aside>
         </div>
-        <div className="page-shell studio-quickbar">
-          <span>
-            <UiIcon name="download" /> Descargas directas
-          </span>
-          <span>
-            <UiIcon name="message" /> Opiniones de la comunidad
-          </span>
-          <span>
-            <UiIcon name="globe" /> En tu móvil y en tu PC
-          </span>
-          <Link href="/recursos">
-            Explorar todo <UiIcon name="arrow" />
-          </Link>
-        </div>
-        <section
-          className="page-shell studio-section"
-          aria-labelledby="discover-title"
-        >
-          <div className="studio-section-heading">
-            <div>
-              <p className="section-kicker">A tu manera</p>
-              <h2 id="discover-title">¿Qué le falta a tu mundo?</h2>
-            </div>
-            <p>
-              Pequeños cambios.
-              <br />
-              Una partida completamente distinta.
-            </p>
-          </div>
-          <div className="discovery-grid">
-            {categories.map((category) => (
-              <Link
-                key={category.href}
-                href={category.href}
-                className="discovery-card"
-              >
-                <span className="discovery-icon">
-                  <UiIcon name={category.icon} />
-                </span>
-                <span>
-                  <strong>{category.title}</strong>
-                  <span>{category.description}</span>
-                </span>
-                <span className="discovery-count">
-                  {category.count}
-                  <UiIcon name="external" />
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
         <section
           className="page-shell studio-section studio-new"
+          id="novedades"
           aria-labelledby="latest-title"
         >
-          <div className="studio-section-heading">
+          <div className="studio-section-heading" data-reveal="heading">
             <div>
-              <p className="section-kicker">Recién llegados</p>
-              <h2 id="latest-title">Lo nuevo merece una partida.</h2>
+              <p className="section-kicker">Para descubrir</p>
+              <h2 id="latest-title">Para tu próxima partida.</h2>
             </div>
             <Link href="/recursos" className="text-link">
-              Ver biblioteca <UiIcon name="arrow" />
+              Ver los {resources.length} recursos <UiIcon name="arrow" />
             </Link>
           </div>
-          {resources.length ? (
+          {latest.length ? (
             <div className="public-resource-grid">
-              {resources.slice(0, 6).map((resource) => (
+              {latest.map((resource) => (
                 <ResourceCard key={resource.id} resource={resource} />
               ))}
             </div>
           ) : (
             <div className="catalog-empty">
-              <h3>Preparando lo próximo.</h3>
-              <p>Los recursos aparecerán aquí cuando estén publicados.</p>
+              <h3>Los últimos recursos están en portada.</h3>
+              <p>Abre la biblioteca para consultar todas las publicaciones.</p>
             </div>
           )}
         </section>
-        <section className="studio-minecraft" aria-labelledby="minecraft-title">
-          <div className="studio-minecraft-landscape">
+        <section
+          data-reveal="section"
+          className="studio-minecraft"
+          aria-labelledby="minecraft-title"
+        >
+          <div className="studio-minecraft-landscape" data-parallax>
             <Image src="/minecraft-landscape.webp" alt="" fill sizes="100vw" />
           </div>
           <div className="page-shell studio-minecraft-inner">
@@ -234,58 +144,32 @@ export default async function Home() {
                 Encuentra tu versión <UiIcon name="arrow" />
               </Link>
             </div>
-            <div className="edition-card">
-              <div className="edition-card-head">
-                <UiIcon name="globe" />
-                <span>Elige dónde jugar</span>
+            {versions[0] ? (
+              <div className="edition-card version-preview">
+                <ResourceThumb resource={versions[0]} optimize />
+                <div>
+                  <span>
+                    {versions[0].edition} · {versions[0].platform}
+                  </span>
+                  <h3>Minecraft {versions[0].version}</h3>
+                  <p>
+                    {formatBytes(versions[0].fileSize)} · {versions.length}{" "}
+                    {versions.length === 1
+                      ? "versión disponible"
+                      : "versiones disponibles"}
+                  </p>
+                </div>
               </div>
-              <h3>
-                Tu juego.
-                <br />
-                Tu plataforma.
-              </h3>
-              <div className="platform-list">
-                {platforms.length ? platforms.map((platform) => <span key={platform}>{platform}</span>) : <span>Consulta la biblioteca</span>}
-              </div>
-              <p>
-                {versions.length
-                  ? `${versions.length} ${versions.length === 1 ? "versión disponible" : "versiones disponibles"} en la biblioteca`
-                  : "Consulta las versiones publicadas"}
-              </p>
-              <Link href="/minecraft">
-                Ver versiones y detalles <UiIcon name="external" />
-              </Link>
-            </div>
+            ) : null}
           </div>
         </section>
-        {popular.length ? (
-          <section
-            className="page-shell studio-section studio-discover"
-            aria-labelledby="popular-title"
-          >
-            <div className="studio-section-heading">
-              <div>
-                <p className="section-kicker">Sigue explorando</p>
-                <h2 id="popular-title">
-                  {hasActivity
-                    ? "Los que más se descargan."
-                    : "Tu próximo descubrimiento."}
-                </h2>
-              </div>
-            </div>
-            <ResourceRail>
-              {popular.map((resource) => (
-                <ResourceCard resource={resource} key={resource.id} />
-              ))}
-            </ResourceRail>
-          </section>
-        ) : null}
         <section
           className="page-shell studio-section studio-community"
+          data-reveal="section"
           id="comunidad"
           aria-labelledby="community-title"
         >
-          <div className="studio-section-heading">
+          <div className="studio-section-heading" data-reveal="heading">
             <div>
               <p className="section-kicker">Más allá de los bloques</p>
               <h2 id="community-title">La comunidad es parte del juego.</h2>
@@ -355,6 +239,8 @@ export default async function Home() {
         </section>
         <section
           className="page-shell studio-section studio-help"
+          id="ayuda"
+          data-reveal="section"
           aria-labelledby="help-title"
         >
           <div>
@@ -364,9 +250,6 @@ export default async function Home() {
               <br />a tu mundo.
             </h2>
             <p>Las respuestas que necesitas para empezar.</p>
-            <Link href="/recursos" className="text-link">
-              Volver a explorar <UiIcon name="arrow" />
-            </Link>
           </div>
           <div className="help-questions">
             {questions.map(([question, answer]) => (

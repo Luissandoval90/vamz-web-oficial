@@ -346,6 +346,102 @@ try {
     (await (await request(reviewUrl, { cookie: other })).json()).ownReview,
     null,
   );
+  const commentsUrl = "/api/resources/" + resource.id + "/comments";
+  await post(
+    commentsUrl,
+    null,
+    { body: "No se publica sin iniciar sesión." },
+    401,
+  );
+  await post(commentsUrl, other, { body: " " }, 400);
+  const comment = (
+    await post(
+      commentsUrl,
+      other,
+      {
+        body: "Comentario sin estrellas y con contenido <script>inofensivo como texto</script>",
+        approved: true,
+      },
+      201,
+    )
+  ).result.comment;
+  assert.equal(comment.approved, false);
+  assert.equal((await (await request(commentsUrl)).json()).comments.length, 0);
+  assert.equal(
+    (await (await request(commentsUrl, { cookie: other })).json()).comments[0]
+      .id,
+    comment.id,
+  );
+  const commentUrl = "/api/comments/" + comment.id;
+  assert.equal(
+    (
+      await request(commentUrl, {
+        method: "PATCH",
+        cookie: other,
+        json: { approved: true },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(commentUrl, {
+        method: "PATCH",
+        cookie: admin,
+        json: { approved: true },
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await (await request(commentsUrl)).json()).commentCount, 1);
+  const publicDetail = await (await request("/recurso/" + resource.id)).text();
+  assert.equal(
+    publicDetail.includes("<script>inofensivo como texto</script>"),
+    false,
+  );
+  const authorComment = (
+    await post(
+      commentsUrl,
+      admin,
+      { body: "Respuesta del autor sin autoevaluar su publicación." },
+      201,
+    )
+  ).result.comment;
+  assert.equal(authorComment.approved, true);
+  assert.equal(authorComment.isAuthor, true);
+  assert.equal(
+    (
+      await request("/api/comments/" + authorComment.id, {
+        method: "DELETE",
+        cookie: other,
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(commentUrl, {
+        method: "DELETE",
+        cookie: other,
+        headers: { Origin: "https://attacker.test" },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await request(commentUrl, { method: "DELETE", cookie: other })).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request("/api/comments/" + authorComment.id, {
+        method: "DELETE",
+        cookie: admin,
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await (await request(commentsUrl)).json()).commentCount, 0);
   const firstView = await post(
     "/api/resources/" + resource.id + "/stats",
     null,
@@ -428,6 +524,17 @@ try {
     404,
   );
   await post("/api/resources/" + privateResource.id + "/stats", null, {}, 404);
+  assert.equal(
+    (await request("/api/resources/" + privateResource.id + "/comments"))
+      .status,
+    404,
+  );
+  await post(
+    "/api/resources/" + privateResource.id + "/comments",
+    other,
+    { body: "No se puede comentar un archivo privado." },
+    404,
+  );
   assert.equal(
     (await request("/api/resources/" + privateResource.id + "/reviews")).status,
     404,
