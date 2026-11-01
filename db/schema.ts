@@ -78,6 +78,32 @@ export const resourceStats = sqliteTable("resource_stats", {
   downloads: integer("downloads").notNull().default(0),
 });
 
+export const resourceComments = sqliteTable(
+  "resource_comments",
+  {
+    id: text("id").primaryKey(),
+    resourceId: text("resource_id")
+      .notNull()
+      .references(() => resources.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    isApproved: integer("is_approved", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => ({
+    publicIdx: index("resource_comments_public_idx").on(
+      table.resourceId,
+      table.isApproved,
+      table.createdAt,
+    ),
+  }),
+);
+
 export const resourceEvents = sqliteTable(
   "resource_events",
   {

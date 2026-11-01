@@ -10,6 +10,16 @@ CREATE TABLE IF NOT EXISTS resource_stats (
   views INTEGER NOT NULL DEFAULT 0 CHECK(views >= 0),
   downloads INTEGER NOT NULL DEFAULT 0 CHECK(downloads >= 0)
 );
+CREATE TABLE IF NOT EXISTS resource_comments (
+  id TEXT PRIMARY KEY NOT NULL,
+  resource_id TEXT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  is_approved INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS resource_comments_public_idx ON resource_comments(resource_id,is_approved,created_at);
 CREATE TABLE IF NOT EXISTS resource_events (
   resource_id TEXT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
   kind TEXT NOT NULL CHECK(kind IN ('view', 'download')),

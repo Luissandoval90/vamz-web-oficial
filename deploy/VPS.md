@@ -107,3 +107,9 @@ El inicializador crea `resource_reviews`, `resource_stats` y `resource_events` s
 Las visitas se registran al mostrar una ficha en una pestaña visible. Las descargas se registran al iniciar una respuesta correcta, no al terminar de transferir el archivo. Ambos contadores deduplican por cookie de navegador y día UTC; no equivalen a personas únicas. No se reconstruyen cifras históricas. Se excluyen agentes de diagnóstico y rastreadores reconocidos. Los identificadores diarios se resumen mediante HMAC y caducan a los dos días; se limpian al registrar actividad nueva. Los totales se conservan y están incluidos en la copia de SQLite.
 
 Las subidas muestran bytes enviados y porcentaje real mediante XMLHttpRequest, con cancelación antes de confirmar la publicación. Los archivos temporales cancelados se descartan únicamente si pertenecen al administrador y no están referenciados por ningún recurso. Los archivos publicados no se eliminan por esta vía.
+
+## Comentarios y participación
+
+El inicializador añade `resource_comments` sin cambiar las tablas ni los datos existentes. Las cuentas registradas pueden comentar sin estrellas y retirar sus propios mensajes. Los comentarios de cuentas normales quedan pendientes; solo su autor los ve hasta que se aprueban. Los del administrador se publican directamente. El autor de una publicación puede responder mediante comentarios y sigue sin poder autoevaluarse con estrellas.
+
+El apartado Comunidad, en `/dashboard?view=reviews`, modera tanto comentarios como reseñas. Los cambios de estado comprueban sesión, rol y origen; los textos admiten hasta 1500 caracteres y se muestran como texto, sin interpretar HTML. Hay un máximo de diez comentarios por cuenta y hora. La copia de SQLite incluye comentarios, reseñas y sus estados.

@@ -104,12 +104,31 @@ async function checkStudioUI(page) {
     await carousel.getByRole("button", { name: /carrusel/ }).count(),
     0,
   );
-  await page.getByRole("button", { name: "Más recursos", exact: true }).click();
+  const featuredNames = await tabs.allTextContents();
+  const cardNames = await page
+    .locator(".studio-new .resource-card h3")
+    .allTextContents();
   assert.ok(
+    cardNames.every(
+      (name) =>
+        !featuredNames.map((title) => title.trim()).includes(name.trim()),
+    ),
+    "Los recursos destacados no deben repetirse en las tarjetas de novedades",
+  );
+  const cards = await page
+    .locator(".studio-new .resource-card-link")
+    .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+  assert.equal(
+    new Set(cards).size,
+    cards.length,
+    "No debe haber tarjetas repetidas",
+  );
+  assert.equal(
     await page
-      .getByRole("region", { name: "Recursos para descubrir", exact: true })
-      .evaluate((element) => element.scrollLeft > 0),
-    "La tira de recursos debe desplazarse",
+      .getByRole("button", { name: "Más recursos", exact: true })
+      .count(),
+    0,
+    "Se retiró el segundo carrusel que repetía publicaciones",
   );
   await page
     .getByText("¿Necesito una cuenta para descargar?", { exact: true })
@@ -168,6 +187,6 @@ async function checkStudioUI(page) {
   );
   assert.ok((await page.getByRole("article").innerText()).includes("Spectral"));
   console.log(
-    "Carrusel, pausa, enlaces, teclado, reproducción, movimiento reducido, tira, ayuda, menú móvil y filtros verificados.",
+    "Carrusel, pausa, enlaces, teclado, reproducción, movimiento reducido, publicaciones sin duplicados, ayuda, menú móvil y filtros verificados.",
   );
 }

@@ -11,7 +11,7 @@ const publishedDate = new Intl.DateTimeFormat("es-PE", {
 });
 export function ResourceCard({ resource }: { resource: CatalogResource }) {
   return (
-    <article className="resource-card">
+    <article className="resource-card" data-reveal="card">
       <Link
         className="resource-card-link"
         href={`/recurso/${resource.id}`}

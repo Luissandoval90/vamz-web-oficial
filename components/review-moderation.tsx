@@ -9,7 +9,8 @@ type ModerationReview = {
   title: string | null;
   filename: string;
   username: string | null;
-  rating: number;
+  rating: number | null;
+  kind?: "comment";
   body: string;
   approved: boolean;
   updatedAt: string;
@@ -22,17 +23,20 @@ export function ReviewModeration({ reviews }: { reviews: ModerationReview[] }) {
   const filtered = reviews.filter(
     (review) => filter === "all" || !review.approved,
   );
-  async function moderate(id: string, approved: boolean) {
+  async function moderate(id: string, approved: boolean, kind?: "comment") {
     if (pending) return;
     setPending(id);
     setError("");
     try {
-      const response = await fetch(`/api/reviews/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved }),
-      });
-      if (!response.ok) throw Error("No se pudo actualizar la reseña.");
+      const response = await fetch(
+        `/api/${kind === "comment" ? "comments" : "reviews"}/${id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ approved }),
+        },
+      );
+      if (!response.ok) throw Error("No se pudo actualizar la opinión.");
       router.refresh();
     } catch (failure) {
       setError(
@@ -46,16 +50,17 @@ export function ReviewModeration({ reviews }: { reviews: ModerationReview[] }) {
     <section className="panel-card">
       <div className="section-heading">
         <p className="section-kicker">Comunidad</p>
-        <h2 className="section-title-sm">Moderar reseñas</h2>
+        <h2 className="section-title-sm">Comentarios y reseñas</h2>
         <p className="body-copy">
           Publica opiniones útiles y oculta contenido que no corresponda al
-          recurso. Las reseñas editadas vuelven a revisión. Se muestran hasta 200 reseñas, priorizando las pendientes.
+          recurso. Las reseñas editadas vuelven a revisión. Se muestran hasta
+          200 opiniones, priorizando las pendientes.
         </p>
       </div>
       <div
         className="catalog-filters"
         role="group"
-        aria-label="Filtrar reseñas"
+        aria-label="Filtrar opiniones"
       >
         <button
           type="button"
@@ -88,12 +93,17 @@ export function ReviewModeration({ reviews }: { reviews: ModerationReview[] }) {
                   {review.title || review.filename}
                 </Link>
                 <span>
-                  <UiIcon name="star" /> {review.rating}/5
+                  <UiIcon
+                    name={review.kind === "comment" ? "message" : "star"}
+                  />{" "}
+                  {review.kind === "comment"
+                    ? "Comentario"
+                    : `${review.rating}/5`}
                 </span>
                 <span
                   className={`moderation-status ${review.approved ? "is-approved" : ""}`}
                 >
-                  {review.approved ? "Publicada" : "Pendiente"}
+                  {review.approved ? "Visible" : "Pendiente"}
                 </span>
               </div>
               <p>{review.body}</p>
@@ -111,12 +121,14 @@ export function ReviewModeration({ reviews }: { reviews: ModerationReview[] }) {
                   className={`action-button ${review.approved ? "is-dark" : "is-accent"}`}
                   disabled={pending !== null}
                   type="button"
-                  onClick={() => moderate(review.id, !review.approved)}
+                  onClick={() =>
+                    moderate(review.id, !review.approved, review.kind)
+                  }
                 >
                   {pending === review.id
                     ? "Guardando…"
                     : review.approved
-                      ? "Ocultar reseña"
+                      ? "Ocultar"
                       : "Aprobar y publicar"}
                 </button>
               </div>
@@ -125,8 +137,8 @@ export function ReviewModeration({ reviews }: { reviews: ModerationReview[] }) {
         ) : (
           <div className="empty-box">
             {filter === "pending"
-              ? "No hay reseñas pendientes de revisión."
-              : "Las reseñas de la comunidad aparecerán aquí."}
+              ? "No hay opiniones pendientes de revisión."
+              : "Las opiniones de la comunidad aparecerán aquí."}
           </div>
         )}
       </div>

@@ -1,16 +1,16 @@
 :root {
-  --background: #09121f;
-  --surface: #111f32;
-  --surface-hover: #172b43;
-  --foreground: #edf4ff;
-  --muted: #a5b5cb;
-  --border: #26364c;
-  --accent: #83b8ff;
-  --accent-hover: #accfff;
-  --accent-ink: #102744;
-  --accent-surface: #193454;
-  --accent-border: #3b608b;
-  --text-faint: #91a4bd;
+  --background: #131514;
+  --surface: #1f2422;
+  --surface-hover: #2a302e;
+  --foreground: #f6f6f6;
+  --muted: #b6bab9;
+  --border: #363c3a;
+  --accent: #bfc3c2;
+  --accent-hover: #d4d7d6;
+  --accent-ink: #272d2b;
+  --accent-surface: #333a38;
+  --accent-border: #5d6965;
+  --text-faint: #a2aca9;
 }
 body {
   font-size: 14px;
@@ -20,8 +20,8 @@ body {
   max-width: 1240px;
 }
 .site-header {
-  background: #0b1524f5;
-  border-color: #233249;
+  background: #161918f5;
+  border-color: #333937;
 }
 .header-inner {
   max-width: 1320px;
@@ -50,7 +50,7 @@ body {
 }
 .site-footer {
   margin-top: 0;
-  background: #0b1524;
+  background: #161918;
 }
 .footer-inner {
   max-width: 1320px;
@@ -71,8 +71,8 @@ body {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
-  background: #1b3453;
-  border: 1px solid #466083;
+  background: #343a38;
+  border: 1px solid #5e6b67;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -101,25 +101,22 @@ body {
   margin-top: 18px;
   max-width: 52ch;
 }
-.catalog-heading-mark {
-  display: none;
-}
 .catalog-toolbar {
   padding: 20px;
-  background: #101e30;
+  background: #1e2221;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
 .catalog-search {
   border-radius: 8px;
   min-height: 48px;
-  background: #0b1728;
+  background: #181b1a;
 }
 .catalog-sort {
   font-size: 11px;
 }
 .catalog-sort select {
-  background: #0b1728;
+  background: #181b1a;
   border-radius: 7px;
   min-height: 44px;
 }
@@ -133,9 +130,9 @@ body {
   letter-spacing: 0;
 }
 .catalog-filters button.is-active {
-  background: #254d7c;
-  border-color: #4e7eb5;
-  color: #e7f3ff;
+  background: #4c5552;
+  border-color: #7a8984;
+  color: #f3f3f3;
 }
 .catalog-count {
   font-size: 11px;
@@ -143,7 +140,7 @@ body {
 .catalog-empty {
   padding: 48px 24px;
   border-radius: 12px;
-  background: #101d2e;
+  background: #1d2120;
 }
 .catalog-empty h3 {
   font-size: 24px;
@@ -154,7 +151,7 @@ body {
 }
 .contribute-banner {
   margin-top: 40px;
-  background: #102338;
+  background: #222625;
   border-radius: 12px;
   padding: 26px 30px;
 }
@@ -176,7 +173,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #c4d4e9;
+  color: #d5d8d7;
 }
 .breadcrumbs a {
   flex-shrink: 0;
@@ -201,7 +198,7 @@ body {
   aspect-ratio: 16/9;
   border-radius: 13px;
   overflow: hidden;
-  background: #13243b;
+  background: #252928;
   border: 1px solid var(--border);
 }
 .resource-detail-cover img {
@@ -214,7 +211,7 @@ body {
   bottom: 18px;
   left: 18px;
   border: 1px solid #ffffff35;
-  background: #0c1d33e8;
+  background: #1e2120e8;
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 11px;
@@ -249,7 +246,7 @@ body {
 .resource-description-section > p {
   font-size: 14px;
   line-height: 1.9;
-  color: #b7c6da;
+  color: #c7cac9;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -257,7 +254,7 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #101e30;
+  background: #1e2221;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -284,8 +281,8 @@ body {
 }
 .file-extension {
   margin-left: auto;
-  color: #a7caff;
-  background: #1d3b5c;
+  color: #d1d5d4;
+  background: #39403e;
   padding: 5px 9px;
   font-size: 10px;
   border-radius: 5px;
@@ -294,8 +291,8 @@ body {
   position: sticky;
   top: 106px;
   min-width: 0;
-  border: 1px solid #304d70;
-  background: #12243b;
+  border: 1px solid #4b5552;
+  background: #242927;
   border-radius: 13px;
   padding: 28px;
 }
@@ -310,8 +307,8 @@ body {
   width: 45px;
   height: 45px;
   border-radius: 12px;
-  background: #214467;
-  color: #b2d6ff;
+  background: #404845;
+  color: #d7dad9;
   flex-shrink: 0;
 }
 .download-panel-title p {
@@ -334,7 +331,7 @@ body {
   align-items: baseline;
   gap: 20px;
   padding: 11px 0;
-  border-bottom: 1px solid #2b405a;
+  border-bottom: 1px solid #3f4644;
   font-size: 12px;
 }
 .download-facts dt {
@@ -351,8 +348,8 @@ body {
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  background: #86baff;
-  color: #112c4b;
+  background: #c0c5c3;
+  color: #2b312f;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 800;
@@ -366,7 +363,7 @@ body {
   margin-right: auto;
 }
 .download-primary-button:hover {
-  background: #b2d4ff;
+  background: #d7dad9;
 }
 .download-feedback {
   font-size: 10px;
@@ -380,7 +377,7 @@ body {
   gap: 11px;
   margin-top: 22px;
   padding-top: 21px;
-  border-top: 1px solid #2b405a;
+  border-top: 1px solid #3f4644;
 }
 .download-help > .ui-icon {
   width: 17px;
@@ -423,37 +420,10 @@ body {
   color: var(--muted);
   flex-shrink: 0;
 }
-.review-summary-panel {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  padding: 24px 28px;
-  background: #112033;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 28px;
-}
-.review-score {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-.review-score > strong {
-  font-size: 44px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-.review-score p {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 7px;
-}
 .rating-stars {
   display: inline-flex;
   gap: 3px;
-  color: #53667e;
+  color: #626f6b;
   flex-shrink: 0;
 }
 .rating-stars .ui-icon {
@@ -492,12 +462,12 @@ body {
   place-items: center;
   width: 36px;
   height: 36px;
-  background: #254768;
+  background: #424b48;
   border-radius: 50%;
   font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
-  color: #cce4ff;
+  color: #e5e6e6;
 }
 .review-person > div {
   min-width: 0;
@@ -519,42 +489,14 @@ body {
 .review-item > p {
   font-size: 13px;
   line-height: 1.9;
-  color: #bdcce0;
+  color: #cdd0cf;
   margin-top: 18px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.reviews-empty {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  text-align: center;
-  padding: 44px 25px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  min-height: 230px;
-  justify-content: center;
-}
-.reviews-empty > .ui-icon {
-  width: 30px;
-  height: 30px;
-  color: var(--accent);
-  margin-bottom: 18px;
-}
-.reviews-empty h3 {
-  font-size: 21px;
-  letter-spacing: -0.025em;
-}
-.reviews-empty p {
-  font-size: 12px;
-  color: var(--muted);
-  max-width: 39ch;
-  line-height: 1.9;
-  margin-top: 12px;
-}
 .review-composer {
   padding: 25px;
-  background: #111f32;
+  background: #1f2422;
   border: 1px solid var(--border);
   border-radius: 12px;
   min-width: 0;
@@ -586,7 +528,7 @@ body {
 .review-composer textarea {
   resize: vertical;
   min-height: 120px;
-  background: #0b1728;
+  background: #181b1a;
   border-radius: 8px;
   font-size: 12px;
 }
@@ -609,7 +551,7 @@ body {
   width: 36px;
   height: 36px;
   cursor: pointer;
-  color: #62768f;
+  color: #71807b;
   border: 1px solid var(--border);
   border-radius: 6px;
 }
@@ -650,7 +592,7 @@ body {
   font-size: 11px;
   background: none;
   border: 0;
-  color: #bacbe0;
+  color: #cbcfce;
   margin-top: 10px;
 }
 .review-pending {
@@ -662,19 +604,12 @@ body {
   width: 14px;
   height: 14px;
 }
-.metrics-explanation {
-  font-size: 10px;
-  line-height: 1.9;
-  max-width: 90ch;
-  color: var(--text-faint);
-  margin-top: 24px;
-}
 .related-section {
   padding-top: 58px;
 }
 .minecraft-download-card {
   border-radius: 12px;
-  background: #111f32;
+  background: #1f2422;
   padding: 20px;
   min-width: 0;
   overflow: hidden;
@@ -684,7 +619,7 @@ body {
   aspect-ratio: 16/9;
   overflow: hidden;
   margin: -20px -20px 20px;
-  background: #182c44;
+  background: #2b312f;
 }
 .minecraft-card-cover img {
   object-fit: cover;
@@ -711,13 +646,13 @@ body {
 }
 .minecraft-filters {
   padding: 20px;
-  background: #101e30;
+  background: #1e2221;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
 .minecraft-filters input,
 .minecraft-filters select {
-  background: #0b1728;
+  background: #181b1a;
   border-radius: 7px;
   min-height: 44px;
 }
@@ -742,13 +677,13 @@ body {
 .privacy-page p:not(.section-kicker) {
   font-size: 14px;
   line-height: 1.9;
-  color: #b5c5d9;
+  color: #c5c9c8;
 }
 .loading-library {
   padding-block: 54px;
 }
 .skeleton {
-  background: #172941;
+  background: #292f2d;
   position: relative;
   overflow: hidden;
   border-radius: 8px;
@@ -802,8 +737,8 @@ body {
 }
 .upload-progress-panel {
   padding: 20px;
-  border: 1px solid #466b98;
-  background: #122d4c;
+  border: 1px solid #687671;
+  background: #2c3230;
   border-radius: 10px;
   margin-top: 24px;
 }
@@ -833,7 +768,7 @@ body {
   padding: 24px 28px !important;
   display: block;
   min-height: 0;
-  background: #112137;
+  background: #222625;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -877,7 +812,7 @@ body {
 }
 .moderation-card {
   padding: 24px;
-  background: #111f32;
+  background: #1f2422;
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -910,8 +845,8 @@ body {
   font-size: 10px;
   padding: 4px 9px;
   border-radius: 5px;
-  background: #2c3444;
-  color: #d2def0;
+  background: #353b39;
+  color: #e0e2e1;
 }
 .moderation-status.is-approved {
   background: #173f40;
@@ -925,7 +860,7 @@ body {
 }
 .admin-stat-strip > div {
   padding: 18px;
-  background: #12223a;
+  background: #242827;
   border: 1px solid var(--border);
   border-radius: 10px;
 }
@@ -940,7 +875,7 @@ body {
 }
 .auth-card {
   border-radius: 14px;
-  border-color: #304663;
+  border-color: #454e4b;
 }
 .auth-card .section-kicker {
   text-transform: none;
@@ -986,10 +921,6 @@ body {
   .resource-download-panel {
     padding: 23px;
   }
-  .review-summary-panel {
-    align-items: flex-start;
-    flex-direction: column;
-  }
   .wordmark-label {
     display: none;
   }
@@ -1002,7 +933,7 @@ body {
     padding-inline: 18px;
   }
   .site-header .header-navigation {
-    background: #101d30;
+    background: #1e2221;
   }
   .site-header .primary-navigation a {
     font-size: 14px;
@@ -1117,19 +1048,6 @@ body {
   .detail-section-heading .section-kicker {
     font-size: 11px;
   }
-  .review-summary-panel {
-    padding: 21px;
-    gap: 20px;
-  }
-  .review-score > strong {
-    font-size: 40px;
-  }
-  .review-score {
-    gap: 16px;
-  }
-  .review-score p {
-    font-size: 10px;
-  }
   .review-person > .rating-stars .ui-icon {
     width: 12px;
     height: 12px;
@@ -1148,9 +1066,6 @@ body {
   }
   .review-composer {
     padding: 23px;
-  }
-  .metrics-explanation {
-    font-size: 9px;
   }
   .related-section {
     padding-top: 38px;
